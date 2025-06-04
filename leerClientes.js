@@ -1,17 +1,13 @@
 const { google } = require('googleapis');
-const path = require('path');
-const fs = require('fs');
+
+const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
+const SHEET_NAME = 'Clientes';
 
 async function leerClientesDesdeSheets() {
-  const credentialsPath = path.join(__dirname, 'sheets-credentials.json');
-
-  if (!fs.existsSync(credentialsPath)) {
-    console.error(`❌ Archivo de credenciales no encontrado en: ${credentialsPath}`);
-    return;
-  }
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 
   const auth = new google.auth.GoogleAuth({
-    keyFile: credentialsPath,
+    credentials,
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
   });
 
@@ -19,15 +15,15 @@ async function leerClientesDesdeSheets() {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client });
 
-    const spreadsheetId = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
-    const range = 'Clientes!A2:F'; // ya vi que tu hoja se llama "Clientes"
+    const range = `${SHEET_NAME}!A2:F`;
 
     const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
+      spreadsheetId: SPREADSHEET_ID,
       range,
     });
 
     const rows = res.data.values;
+
     if (rows.length) {
       const clientes = {};
       rows.forEach(([nombre, rfc, razon, cp, cfdi, correo]) => {

@@ -1,9 +1,7 @@
 const { google } = require('googleapis');
-const path = require('path');
 
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
 const SHEET_NAME = 'Clientes';
-const CREDENTIALS_PATH = path.join(__dirname, 'sheets-credentials.json');
 
 function normalizarTexto(texto) {
   return texto?.normalize("NFD")
@@ -41,8 +39,10 @@ const formaPagoMap = {
 };
 
 async function buscarCliente(nombreOBuscado) {
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+
   const auth = new google.auth.GoogleAuth({
-    keyFile: CREDENTIALS_PATH,
+    credentials,
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
   });
 
