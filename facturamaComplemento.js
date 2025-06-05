@@ -9,42 +9,40 @@ const AUTH_HEADER = {
 };
 
 /**
- * 🔍 Buscar la última factura PPD emitida por RFC del receptor
+ * 🔍 Buscar TODAS las facturas emitidas a un RFC
  */
-async function buscarFacturaPorRFC(rfc) {
+async function buscarFacturasPorRFC(rfc) {
   try {
     const res = await axios.get(`${FACTURAMA_API}/Cfdi?type=issued`, {
       headers: AUTH_HEADER,
     });
 
     const facturas = res.data || [];
-    const facturasFiltradas = facturas.filter(
-      (f) =>
-        f.Rfc?.toUpperCase().trim() === rfc.toUpperCase().trim() &&
-        f.PaymentMethod === 'PPD'
-    );
 
-    if (facturasFiltradas.length === 0) return null;
+    const facturasFiltradas = facturas
+      .filter((f) =>
+        f.Rfc?.toUpperCase().trim() === rfc.toUpperCase().trim()
+      )
+      .map((f) => ({
+        uuid: f.Uuid || f.FolioFiscal,
+        total: parseFloat(f.Total),
+        subtotal: parseFloat(f.Subtotal) || parseFloat(f.Total) / 1.16,
+        moneda: f.Currency || 'MXN',
+        folio: f.Folio || '1',
+        serie: f.Serie || 'A',
+        id: f.Id,
+        metodo: f.PaymentMethod || 'PUE',
+      }));
 
-    const factura = facturasFiltradas[0];
-
-    return {
-      uuid: factura.Uuid || factura.FolioFiscal,
-      total: parseFloat(factura.Total),
-      subtotal: parseFloat(factura.Subtotal) || parseFloat(factura.Total) / 1.16,
-      moneda: factura.Currency || 'MXN',
-      folio: factura.Folio || '1',
-      serie: factura.Serie || 'A',
-      id: factura.Id
-    };
+    return facturasFiltradas;
   } catch (err) {
-    console.error('❌ Error al buscar factura:', err.response?.data || err.message);
-    return null;
+    console.error('❌ Error al buscar facturas:', err.response?.data || err.message);
+    return [];
   }
 }
 
 /**
- * 🧾 Generar complemento de pago (con datos del cliente ya obtenidos)
+ * 🧾 Generar complemento de pago (CRP)
  */
 async function generarComplementoPago(datosPago, receptor) {
   if (!receptor?.rfc || !receptor?.razon) {
@@ -57,7 +55,7 @@ async function generarComplementoPago(datosPago, receptor) {
   const payload = {
     CfdiType: 'P',
     NameId: '14',
-    ExpeditionPlace: '64103', // Verifica que esté registrado correctamente en Facturama
+    ExpeditionPlace: '64103', // Cambia esto si es necesario
     Receiver: {
       Rfc: receptor.rfc,
       Name: receptor.razon,
@@ -115,6 +113,6 @@ async function generarComplementoPago(datosPago, receptor) {
 }
 
 module.exports = {
-  buscarFacturaPorRFC,
+  buscarFacturasPorRFC,
   generarComplementoPago
 };

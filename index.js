@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { enviarCorreo } = require('./services/mailer');
 const { generarFacturaReal } = require('./services/facturamaReal');
-const { buscarFacturaPorRFC, generarComplementoPago } = require('./facturamaComplemento');
+const { buscarFacturasPorRFC, generarComplementoPago } = require('./facturamaComplemento');
 const { responderChat } = require('./services/chatModel');
 const { analizarMensaje } = require('./analizarMensaje');
 const { buscarCliente } = require('./buscarCliente');
@@ -41,23 +41,45 @@ app.post('/webhook', async (req, res) => {
       return responder('⚠️ Escribe *complemento* seguido del RFC. Ejemplo:\ncomplemento ROHA651106MI4');
     }
 
-    global.ESTADO_COMPLEMENTO[from] = { rfc };
-    return responder('📅 Por favor, dime la fecha y forma de pago separadas por espacio. Ejemplo:\n2025-06-01 03');
+    const facturas = await buscarFacturasPorRFC(rfc);
+
+    if (!facturas || facturas.length === 0) {
+      return responder('❌ No se encontró ninguna factura emitida a ese RFC.');
+    }
+
+    global.ESTADO_COMPLEMENTO[from] = {
+      rfc,
+      facturas
+    };
+
+    let lista = facturas.map((f, i) => `*${i + 1}*. Folio: ${f.folio} - $${f.total} - ${f.metodo}`).join('\n');
+    return responder(
+      `📑 Se encontraron las siguientes facturas:\n\n${lista}\n\nEscribe el número de la factura que deseas usar.`
+    );
   }
 
-  // Paso 2: Fecha y forma de pago
-  if (global.ESTADO_COMPLEMENTO[from]) {
+  // Paso 2: Selección de factura
+  if (global.ESTADO_COMPLEMENTO[from] && !global.ESTADO_COMPLEMENTO[from].facturaSeleccionada) {
+    const seleccion = parseInt(message);
+    const estado = global.ESTADO_COMPLEMENTO[from];
+
+    if (isNaN(seleccion) || seleccion < 1 || seleccion > estado.facturas.length) {
+      return responder('⚠️ Por favor, elige un número válido de la lista anterior.');
+    }
+
+    const facturaSeleccionada = estado.facturas[seleccion - 1];
+    estado.facturaSeleccionada = facturaSeleccionada;
+
+    return responder('📅 Ahora dime la fecha y forma de pago separadas por espacio. Ejemplo:\n2025-06-01 03');
+  }
+
+  // Paso 3: Fecha y forma de pago
+  if (global.ESTADO_COMPLEMENTO[from]?.facturaSeleccionada) {
     const estado = global.ESTADO_COMPLEMENTO[from];
     const [fecha, formaPago] = message.split(' ');
 
     if (!fecha || !formaPago) {
       return responder('⚠️ Formato incorrecto. Ejemplo:\n2025-06-01 03');
-    }
-
-    const factura = await buscarFacturaPorRFC(estado.rfc);
-    if (!factura) {
-      delete global.ESTADO_COMPLEMENTO[from];
-      return responder('❌ No se encontró ninguna factura PPD emitida a ese RFC.');
     }
 
     const cliente = await buscarCliente(estado.rfc);
@@ -71,14 +93,14 @@ app.post('/webhook', async (req, res) => {
       nombre: cliente.razon,
       fechaPago: `${fecha}T00:00:00`,
       formaPago,
-      monto: factura.total,
-      total: factura.total,
-      subtotal: factura.subtotal,
-      moneda: factura.moneda,
-      uuid: factura.uuid,
-      id: factura.id,
-      folio: factura.folio,
-      serie: factura.serie
+      monto: estado.facturaSeleccionada.total,
+      total: estado.facturaSeleccionada.total,
+      subtotal: estado.facturaSeleccionada.subtotal,
+      moneda: estado.facturaSeleccionada.moneda,
+      uuid: estado.facturaSeleccionada.uuid,
+      id: estado.facturaSeleccionada.id,
+      folio: estado.facturaSeleccionada.folio,
+      serie: estado.facturaSeleccionada.serie
     };
 
     const complemento = await generarComplementoPago(datosPago, cliente);
@@ -99,7 +121,7 @@ app.post('/webhook', async (req, res) => {
     return responder(`✅ Complemento generado para *${datosPago.rfc}*.\n📧 Enviado a *${cliente.correo}*.`);
   }
 
-  // Confirmación de factura (sí / si / SI / etc.)
+  // Confirmación de factura
   const afirmacion = message.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
   if (afirmacion === 'si' && global.ULTIMO_INTENTO) {
     const datos = global.ULTIMO_INTENTO;
@@ -122,7 +144,7 @@ app.post('/webhook', async (req, res) => {
   if (message.toLowerCase() === 'facturar') {
     return responder(
       `📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\n` +
-      `Ejemplo:\n*URVAN BLANCA\\nP/GRX425F\\nS/K9033313\\nO/7134581\\nFACTURA A NISSAN CENTRO MAX*`
+      `Ejemplo:\n*URVAN BLANCA\nP/GRX425F\nS/K9033313\nO/7134581\nFACTURA A NISSAN CENTRO MAX*`
     );
   }
 
@@ -135,7 +157,6 @@ app.post('/webhook', async (req, res) => {
       return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
     }
 
-    // Detectar si el mensaje pide explícitamente PUE o PPD
     const mensajeLower = message.toLowerCase();
     if (mensajeLower.includes('pue')) {
       cliente.metodoPago = 'PUE';
