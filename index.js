@@ -99,8 +99,9 @@ app.post('/webhook', async (req, res) => {
     return responder(`✅ Complemento generado para *${datosPago.rfc}*.\n📧 Enviado a *${cliente.correo}*.`);
   }
 
-  // Confirmación de factura
-  if (message.toLowerCase() === 'sí' && global.ULTIMO_INTENTO) {
+  // Confirmación de factura (sí / si / SI / etc.)
+  const afirmacion = message.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+  if (afirmacion === 'si' && global.ULTIMO_INTENTO) {
     const datos = global.ULTIMO_INTENTO;
     responder('📧 Procesando tu factura...');
 
@@ -121,7 +122,7 @@ app.post('/webhook', async (req, res) => {
   if (message.toLowerCase() === 'facturar') {
     return responder(
       `📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\n` +
-      `Ejemplo:\n*26\\nD/M MEDALLÓN\\nURVAN BLANCA\\nP/GRX425F\\nS/K9033313\\nO/7134581\\nFACTURA A NISSAN CENTRO MAX*`
+      `Ejemplo:\n*URVAN BLANCA\\nP/GRX425F\\nS/K9033313\\nO/7134581\\nFACTURA A NISSAN CENTRO MAX*`
     );
   }
 
@@ -134,7 +135,17 @@ app.post('/webhook', async (req, res) => {
       return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
     }
 
-    if (cliente.metodoPago === 'PPD') cliente.formaPago = '99';
+    // Detectar si el mensaje pide explícitamente PUE o PPD
+    const mensajeLower = message.toLowerCase();
+    if (mensajeLower.includes('pue')) {
+      cliente.metodoPago = 'PUE';
+      cliente.formaPago = '03';
+    } else if (mensajeLower.includes('ppd')) {
+      cliente.metodoPago = 'PPD';
+      cliente.formaPago = '99';
+    } else if (cliente.metodoPago === 'PPD') {
+      cliente.formaPago = '99';
+    }
 
     global.ULTIMO_INTENTO = {
       rfc: cliente.rfc,
