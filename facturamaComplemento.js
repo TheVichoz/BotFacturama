@@ -2,14 +2,16 @@ const axios = require('axios');
 
 const FACTURAMA_API = 'https://apisandbox.facturama.mx';
 const AUTH_HEADER = {
-  Authorization: 'Basic ' + Buffer.from(
-    process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
-  ).toString('base64'),
+  Authorization:
+    'Basic ' +
+    Buffer.from(
+      process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
+    ).toString('base64'),
   'Content-Type': 'application/json',
 };
 
 /**
- * 🔍 Buscar TODAS las facturas emitidas a un RFC
+ * 🔍 Buscar TODAS las facturas emitidas por RFC (PUE o PPD)
  */
 async function buscarFacturasPorRFC(rfc) {
   try {
@@ -20,9 +22,7 @@ async function buscarFacturasPorRFC(rfc) {
     const facturas = res.data || [];
 
     const facturasFiltradas = facturas
-      .filter((f) =>
-        f.Rfc?.toUpperCase().trim() === rfc.toUpperCase().trim()
-      )
+      .filter((f) => f.Rfc?.toUpperCase().trim() === rfc.toUpperCase().trim())
       .map((f) => ({
         uuid: f.Uuid || f.FolioFiscal,
         total: parseFloat(f.Total),
@@ -32,7 +32,8 @@ async function buscarFacturasPorRFC(rfc) {
         serie: f.Serie || 'A',
         id: f.Id,
         metodo: f.PaymentMethod || 'PUE',
-      }));
+      }))
+      .sort((a, b) => parseInt(b.folio) - parseInt(a.folio)); // Orden descendente por folio
 
     return facturasFiltradas;
   } catch (err) {
@@ -42,7 +43,7 @@ async function buscarFacturasPorRFC(rfc) {
 }
 
 /**
- * 🧾 Generar complemento de pago (CRP)
+ * 🧾 Generar complemento de pago (con datos del cliente ya obtenidos)
  */
 async function generarComplementoPago(datosPago, receptor) {
   if (!receptor?.rfc || !receptor?.razon) {
@@ -55,13 +56,13 @@ async function generarComplementoPago(datosPago, receptor) {
   const payload = {
     CfdiType: 'P',
     NameId: '14',
-    ExpeditionPlace: '64103', // Cambia esto si es necesario
+    ExpeditionPlace: '64103',
     Receiver: {
       Rfc: receptor.rfc,
       Name: receptor.razon,
       CfdiUse: 'CP01',
       FiscalRegime: receptor.regimen || '601',
-      TaxZipCode: receptor.cp || '64000'
+      TaxZipCode: receptor.cp || '64000',
     },
     Complemento: {
       Payments: [
@@ -114,5 +115,5 @@ async function generarComplementoPago(datosPago, receptor) {
 
 module.exports = {
   buscarFacturasPorRFC,
-  generarComplementoPago
+  generarComplementoPago,
 };
