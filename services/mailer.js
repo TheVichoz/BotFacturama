@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 
 async function enviarCorreo(destinatario, datos) {
   const adjuntos = [];
-  const baseUrl = 'https://apisandbox.facturama.mx';
+  const baseUrl = 'https://api.facturama.mx';
 
   try {
     // ⚠️ TODOS los documentos de API Web se descargan como "issued"

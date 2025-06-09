@@ -6,7 +6,7 @@ require('dotenv').config(); // Carga variables de entorno desde .env
 // Función principal para cargar el CSD (Certificado de Sello Digital)
 async function cargarCSD() {
   // Endpoint de Facturama para cargar certificados en modo sandbox
-  const url = 'https://apisandbox.facturama.mx/api-lite/csds';
+  const url = 'https://api.facturama.mx';
 
   // Token de autenticación desde variables de entorno (.env)
   const auth = process.env.FACTURAMA_AUTH;

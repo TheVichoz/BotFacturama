@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const FACTURAMA_API = 'https://apisandbox.facturama.mx';
+const FACTURAMA_API = 'https://api.facturama.mx';
 const AUTH_HEADER = {
   Authorization:
     'Basic ' +
