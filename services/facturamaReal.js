@@ -1,7 +1,9 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  const url = 'https://api.facturama.mx/api-lite/2/cfdis';
+// ✅ Correcto
+const url = 'https://api.facturama.mx/api-lite/cfdis';
+
 
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
