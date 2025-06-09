@@ -1,10 +1,10 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  // ✅ Endpoint correcto para emitir CFDI en producción
-  const url = 'https://api.facturama.mx/api-lite/cfdis';
+  // ✅ Endpoint actualizado a la versión 2 del API Lite
+  const url = 'https://api.facturama.mx/api-lite/2/cfdis';
 
-  // ✅ Genera el token AUTH dinámicamente usando usuario y contraseña desde .env
+  // ✅ Token AUTH generado dinámicamente
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
   ).toString('base64');
