@@ -17,7 +17,7 @@ async function generarFacturaReal(datosCliente) {
       TaxZipCode: datosCliente.cp
     },
     CfdiType: 'I',
-    ExpeditionPlace: '64103', // Código postal del emisor
+    ExpeditionPlace: '37510', // Código postal del emisor
     Currency: 'MXN',
     PaymentForm: datosCliente.formaPago || '01',
     PaymentMethod: datosCliente.metodoPago || 'PUE',
