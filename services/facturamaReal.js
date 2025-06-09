@@ -1,9 +1,7 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-// ✅ Correcto
-const url = 'https://api.facturama.mx/api-lite/cfdis';
-
+  const url = 'https://api.facturama.mx/api-lite/2/cfdis'; // ✅ Producción
 
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
@@ -49,8 +47,9 @@ const url = 'https://api.facturama.mx/api-lite/cfdis';
     ]
   };
 
-  console.log("📤 Enviando factura a Facturama con estos datos:");
-  console.log(JSON.stringify(factura, null, 2));
+  console.log("➡️ Enviando a:", url);
+  console.log("📤 Headers:", auth.slice(0, 30) + '...'); // corta para no exponer todo
+  console.log("📦 Datos:", JSON.stringify(factura, null, 2));
 
   try {
     const response = await axios.post(url, factura, {
@@ -60,7 +59,7 @@ const url = 'https://api.facturama.mx/api-lite/cfdis';
       }
     });
 
-    console.log('📦 RESUESTA Facturama COMPLETA:');
+    console.log('📦 RESPUESTA Facturama COMPLETA:');
     console.log(JSON.stringify(response.data, null, 2));
 
     if (!response.data || !response.data.Id) {
@@ -79,7 +78,12 @@ const url = 'https://api.facturama.mx/api-lite/cfdis';
 
   } catch (error) {
     console.error('❌ Error al emitir factura:');
-    console.error(JSON.stringify(error.response?.data || error.message, null, 2));
+    if (error.response) {
+      console.error('📥 Código:', error.response.status);
+      console.error('📥 Datos:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error(error.message);
+    }
     throw error;
   }
 }

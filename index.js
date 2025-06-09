@@ -14,6 +14,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 global.ESTADO_COMPLEMENTO = {};
 global.ULTIMO_INTENTO = null;
 
+console.log('🧪 Usuario Facturama:', process.env.FACTURAMA_USER); // Verifica que esté cargando el .env
+
 process.on('uncaughtException', err => {
   console.error('❌ Error no capturado:', err);
 });
@@ -133,7 +135,7 @@ app.post('/webhook', async (req, res) => {
         await enviarCorreo(datos.correo, { ...datos, factura, tipo: 'factura' });
         global.ULTIMO_INTENTO = null;
       } catch (error) {
-        console.error('❌ Error al generar factura:', error.message);
+        console.error('❌ Error al generar factura:', JSON.stringify(error?.response?.data || error.message, null, 2));
       }
     })();
 
