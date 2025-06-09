@@ -1,8 +1,9 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  const url = 'https://api.facturama.mx';
-  
+  // ✅ Endpoint correcto para emitir CFDI en producción
+  const url = 'https://api.facturama.mx/api-lite/cfdis';
+
   // ✅ Genera el token AUTH dinámicamente usando usuario y contraseña desde .env
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
@@ -19,8 +20,8 @@ async function generarFacturaReal(datosCliente) {
     CfdiType: 'I',
     ExpeditionPlace: '64103',
     Currency: 'MXN',
-    PaymentForm: datosCliente.formaPago,         // ✅ DINÁMICO desde Excel/Sheets
-    PaymentMethod: datosCliente.metodoPago,      // ✅ DINÁMICO desde Excel/Sheets
+    PaymentForm: datosCliente.formaPago,
+    PaymentMethod: datosCliente.metodoPago,
     Exportation: '01',
     Observations: datosCliente.comentarios || '',
     Items: [
