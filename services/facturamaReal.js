@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  const url = 'https://api.facturama.mx/api-lite/2/cfdis'; // ✅ Producción
+  const url = 'https://api.facturama.mx/api-lite/2/cfdis'; // Producción
 
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
@@ -11,17 +11,16 @@ async function generarFacturaReal(datosCliente) {
     Receiver: {
       Name: datosCliente.razon,
       Rfc: datosCliente.rfc,
-      CfdiUse: datosCliente.cfdi,
-      FiscalRegime: datosCliente.regimen,
+      CfdiUse: 'G03',              // 🔧 Fijo como en sandbox
+      FiscalRegime: '601',         // 🔧 Fijo como en sandbox
       TaxZipCode: datosCliente.cp
     },
     CfdiType: 'I',
     ExpeditionPlace: '64103',
     Currency: 'MXN',
-    PaymentForm: datosCliente.formaPago,
-    PaymentMethod: datosCliente.metodoPago,
+    PaymentForm: '01',             // 🔧 Efectivo
+    PaymentMethod: 'PUE',          // 🔧 Pago en una sola exhibición
     Exportation: '01',
-    Observations: datosCliente.comentarios || '',
     Items: [
       {
         Quantity: '1',
@@ -47,9 +46,8 @@ async function generarFacturaReal(datosCliente) {
     ]
   };
 
-  console.log("➡️ Enviando a:", url);
-  console.log("📤 Headers:", auth.slice(0, 30) + '...'); // corta para no exponer todo
-  console.log("📦 Datos:", JSON.stringify(factura, null, 2));
+  console.log("📤 Enviando factura fija (modo prueba en prod)");
+  console.log(JSON.stringify(factura, null, 2));
 
   try {
     const response = await axios.post(url, factura, {
@@ -59,13 +57,8 @@ async function generarFacturaReal(datosCliente) {
       }
     });
 
-    console.log('📦 RESPUESTA Facturama COMPLETA:');
+    console.log('📦 RESPUESTA Facturama:');
     console.log(JSON.stringify(response.data, null, 2));
-
-    if (!response.data || !response.data.Id) {
-      console.error('❌ No se generó la factura. Respuesta incompleta o inválida.');
-      throw new Error('Factura no generada correctamente.');
-    }
 
     const { Id, Folio, Links } = response.data;
 
@@ -77,10 +70,9 @@ async function generarFacturaReal(datosCliente) {
     };
 
   } catch (error) {
-    console.error('❌ Error al emitir factura:');
+    console.error('❌ Error al emitir factura fija:');
     if (error.response) {
-      console.error('📥 Código:', error.response.status);
-      console.error('📥 Datos:', JSON.stringify(error.response.data, null, 2));
+      console.error(JSON.stringify(error.response.data, null, 2));
     } else {
       console.error(error.message);
     }
