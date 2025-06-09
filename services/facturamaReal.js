@@ -1,10 +1,10 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  // ✅ Endpoint actualizado a la versión 2 del API Lite
+  // ✅ Endpoint correcto de producción para API Lite v2
   const url = 'https://api.facturama.mx/api-lite/2/cfdis';
 
-  // ✅ Token AUTH generado dinámicamente
+  // ✅ Autenticación dinámica desde variables de entorno
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
   ).toString('base64');
@@ -64,6 +64,14 @@ async function generarFacturaReal(datosCliente) {
         'Content-Type': 'application/json'
       }
     });
+
+    console.log('📦 RESPUSTA Facturama:', response.status, response.data);
+
+    // Validar que la factura fue realmente emitida
+    if (!response.data || !response.data.Id) {
+      console.error('❌ No se generó la factura. Respuesta incompleta:', response.data);
+      throw new Error('Factura no generada correctamente.');
+    }
 
     const { Id, Folio, Links } = response.data;
 
