@@ -10,7 +10,7 @@ async function generarFacturaReal(datosCliente) {
   const factura = {
     // Emisor obligatorio para multiemisor
     Issuer: {
-      Rfc: "CAGJ8111121RE8",                  // Tu RFC emisor
+      Rfc: "CAGJ811121RE8",                  // Tu RFC emisor
       Name: "JORGE CAMARENA GARCIA",         // Nombre fiscal
       FiscalRegime: "612"                    // Régimen: Personas físicas con actividades empresariales
     },
