@@ -1,10 +1,8 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  // ✅ Endpoint correcto de producción para API Lite v2
   const url = 'https://api.facturama.mx/api-lite/2/cfdis';
 
-  // ✅ Autenticación dinámica desde variables de entorno
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
   ).toString('base64');
@@ -49,13 +47,8 @@ async function generarFacturaReal(datosCliente) {
     ]
   };
 
-  console.log("📤 Enviando factura a Facturama:");
-  console.log("→ RFC:", factura.Receiver.Rfc);
-  console.log("→ Régimen:", factura.Receiver.FiscalRegime);
-  console.log("→ CFDI:", factura.Receiver.CfdiUse);
-  console.log("→ Método de pago:", factura.PaymentMethod);
-  console.log("→ Forma de pago:", factura.PaymentForm);
-  console.log("→ CP:", factura.Receiver.TaxZipCode);
+  console.log("📤 Enviando factura a Facturama con estos datos:");
+  console.log(JSON.stringify(factura, null, 2));
 
   try {
     const response = await axios.post(url, factura, {
@@ -65,11 +58,11 @@ async function generarFacturaReal(datosCliente) {
       }
     });
 
-    console.log('📦 RESPUSTA Facturama:', response.status, response.data);
+    console.log('📦 RESUESTA Facturama COMPLETA:');
+    console.log(JSON.stringify(response.data, null, 2));
 
-    // Validar que la factura fue realmente emitida
     if (!response.data || !response.data.Id) {
-      console.error('❌ No se generó la factura. Respuesta incompleta:', response.data);
+      console.error('❌ No se generó la factura. Respuesta incompleta o inválida.');
       throw new Error('Factura no generada correctamente.');
     }
 
@@ -83,7 +76,8 @@ async function generarFacturaReal(datosCliente) {
     };
 
   } catch (error) {
-    console.error('❌ Error al emitir factura:', error.response?.data || error.message);
+    console.error('❌ Error al emitir factura:');
+    console.error(JSON.stringify(error.response?.data || error.message, null, 2));
     throw error;
   }
 }
