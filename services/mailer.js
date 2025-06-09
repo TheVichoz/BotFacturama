@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const axios = require('axios');
 
+// Transportador de correo (Gmail)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -15,16 +16,20 @@ async function enviarCorreo(destinatario, datos) {
   const adjuntos = [];
   const baseUrl = 'https://api.facturama.mx';
 
+  // Generar el token de autenticación con base64 dinámico
+  const authHeader = {
+    Authorization: 'Basic ' + Buffer.from(
+      process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
+    ).toString('base64')
+  };
+
   try {
-    // ⚠️ TODOS los documentos de API Web se descargan como "issued"
     const tipo = 'issued';
     const id = datos.factura?.id || datos.id;
 
     // Descargar PDF
     const pdfRes = await axios.get(`${baseUrl}/cfdi/pdf/${tipo}/${id}`, {
-      headers: {
-        Authorization: process.env.FACTURAMA_AUTH
-      }
+      headers: authHeader
     });
 
     adjuntos.push({
@@ -35,9 +40,7 @@ async function enviarCorreo(destinatario, datos) {
 
     // Descargar XML
     const xmlRes = await axios.get(`${baseUrl}/cfdi/xml/${tipo}/${id}`, {
-      headers: {
-        Authorization: process.env.FACTURAMA_AUTH
-      }
+      headers: authHeader
     });
 
     adjuntos.push({
@@ -68,8 +71,7 @@ async function enviarCorreo(destinatario, datos) {
 
       <hr style="margin: 30px 0;">
       <p style="font-size: 0.85em; color: #666;">
-        ⚠️ <strong>Aviso:</strong> Este mensaje ha sido generado como parte de un sistema de prueba.
-        Los datos mostrados no tienen validez fiscal y han sido generados en un entorno sandbox.
+        ⚠️ <strong>Aviso:</strong> Este mensaje ha sido generado en un entorno productivo con validez fiscal.
       </p>
 
       <p style="font-size: 0.9em;">Saludos cordiales,<br><strong>Equipo de Facturación</strong></p>
