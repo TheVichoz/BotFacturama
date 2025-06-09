@@ -7,6 +7,7 @@ const { buscarFacturasPorRFC, generarComplementoPago } = require('./facturamaCom
 const { responderChat } = require('./services/chatModel');
 const { analizarMensaje } = require('./analizarMensaje');
 const { buscarCliente } = require('./buscarCliente');
+const { probarTokenFacturama } = require('./services/probarTokenFacturama'); // ✅ Nueva línea
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -15,6 +16,7 @@ global.ESTADO_COMPLEMENTO = {};
 global.ULTIMO_INTENTO = null;
 
 console.log('🧪 Usuario Facturama:', process.env.FACTURAMA_USER);
+probarTokenFacturama(); // ✅ Verificamos si el token funciona al iniciar
 
 process.on('uncaughtException', err => {
   console.error('❌ Error no capturado:', err);
@@ -36,7 +38,6 @@ app.post('/webhook', async (req, res) => {
   };
 
   // === COMPLEMENTO DE PAGO ===
-
   if (message.toLowerCase().startsWith('complemento')) {
     const partes = message.split(' ');
     const rfc = partes[1]?.trim();
@@ -44,7 +45,6 @@ app.post('/webhook', async (req, res) => {
     if (!rfc) return responder('⚠️ Escribe *complemento* seguido del RFC. Ejemplo:\ncomplemento ROHA651106MI4');
 
     const facturas = await buscarFacturasPorRFC(rfc);
-
     if (!facturas?.length) return responder('❌ No se encontró ninguna factura emitida a ese RFC.');
 
     global.ESTADO_COMPLEMENTO[from] = { rfc, facturas };
@@ -113,7 +113,6 @@ app.post('/webhook', async (req, res) => {
   }
 
   // === FACTURACIÓN ===
-
   const afirmacion = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
   if (afirmacion === 'si' && global.ULTIMO_INTENTO) {
     const datos = global.ULTIMO_INTENTO;
@@ -180,7 +179,6 @@ app.post('/webhook', async (req, res) => {
   }
 
   // === CHAT GENERAL ===
-
   try {
     const respuestaAI = await responderChat(message);
     const mensajeFijo = "💬 Si deseas una factura, escribe *facturar*. Para complemento, escribe *complemento {RFC}*.";
