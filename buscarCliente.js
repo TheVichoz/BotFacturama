@@ -64,8 +64,8 @@ async function buscarCliente(nombreOBuscado) {
     const formaPagoTexto = row[4]?.trim();
     const metodoPago = row[5]?.trim();
     const usoCfdiTexto = row[6]?.trim();
-    const correos = (row[8] || '').toString().trim(); // columna I
-    const cp = row[17]?.trim(); // columna R
+    const correos = (row[8] || '').toString().trim();
+    const cp = row[17]?.trim();
 
     const buscado = nombreOBuscado?.trim().toUpperCase();
     const nombreActual = nombre?.toUpperCase();
@@ -84,12 +84,26 @@ async function buscarCliente(nombreOBuscado) {
         : regimenFiscalMap[normalizarTexto(regimenTexto)] || '601';
 
       const formaPago = formaPagoMap[normalizarTexto(formaPagoTexto)] || '99';
+      const cfdi = usoCFDIMap[normalizarTexto(usoCfdiTexto)] || 'G03';
+
+      // Log completo para depuración
+      console.log("📋 Datos cargados desde Google Sheets:");
+      console.log({
+        rfc,
+        razon: nombre,
+        cp: codigoPostal,
+        cfdi,
+        correo: correosValidos.join(','),
+        regimen: regimenFinal,
+        metodoPago: metodoPago || 'PUE',
+        formaPago
+      });
 
       return {
         rfc,
         razon: nombre,
         cp: codigoPostal,
-        cfdi: usoCFDIMap[normalizarTexto(usoCfdiTexto)] || 'G03',
+        cfdi,
         correo: correosValidos.join(','),
         regimen: regimenFinal,
         metodoPago: metodoPago || 'PUE',
