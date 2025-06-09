@@ -8,24 +8,27 @@ async function generarFacturaReal(datosCliente) {
   ).toString('base64');
 
   const factura = {
+    // Emisor obligatorio para multiemisor
     Issuer: {
-      Rfc: 'CAGJ8111121RE8',                  // 🔐 Tu RFC emisor
-      Name: 'JORGE CAMARENA GARCIA',         // 🧾 Nombre del emisor
-      FiscalRegime: '612'                    // 🧾 Régimen correcto (Personas Físicas con Actividades Empresariales)
+      Rfc: "CAGJ8111121RE8",                  // Tu RFC emisor
+      Name: "JORGE CAMARENA GARCIA",         // Nombre fiscal
+      FiscalRegime: "612"                    // Régimen: Personas físicas con actividades empresariales
     },
     Receiver: {
       Name: datosCliente.razon,
       Rfc: datosCliente.rfc,
       CfdiUse: datosCliente.cfdi,
-      FiscalRegime: datosCliente.regimen,     // Este debe venir bien en la hoja
+      FiscalRegime: datosCliente.regimen,
       TaxZipCode: datosCliente.cp
     },
     CfdiType: 'I',
-    ExpeditionPlace: '37510', // Tu código postal emisor (León, Gto)
+    ExpeditionPlace: '37510',                // Tu CP de expedición
     Currency: 'MXN',
     PaymentForm: datosCliente.formaPago,
     PaymentMethod: datosCliente.metodoPago,
     Exportation: '01',
+    Folio: String(Math.floor(Math.random() * 1000000)),  // Recomendado: control manual
+    Observations: datosCliente.comentarios || '',
     Items: [
       {
         Quantity: '1',
@@ -48,8 +51,7 @@ async function generarFacturaReal(datosCliente) {
         ],
         Total: '116.00'
       }
-    ],
-    Observations: datosCliente.comentarios || ''
+    ]
   };
 
   console.log('📤 Enviando factura (multiemisor)');
@@ -74,10 +76,11 @@ async function generarFacturaReal(datosCliente) {
       pdf: Links?.Pdf,
       xml: Links?.Xml
     };
+
   } catch (error) {
     console.error('❌ Error al emitir factura:');
-    console.error(JSON.stringify(error?.response?.data || error.message, null, 2));
-    throw new Error('Factura no generada correctamente.');
+    console.error(JSON.stringify(error.response?.data || error.message, null, 2));
+    throw new Error("Factura no generada correctamente.");
   }
 }
 
