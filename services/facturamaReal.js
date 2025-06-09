@@ -1,41 +1,34 @@
+// services/facturamaReal.js
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  const url = 'https://api.facturama.mx/api-lite/3/cfdis';
+  const url = 'https://api.facturama.mx/3/cfdis'; // ✅ Endpoint correcto para API Web (no multiemisor)
 
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
   ).toString('base64');
 
   const factura = {
-    // Emisor obligatorio para multiemisor
-    Issuer: {
-      Rfc: "CAGJ811121RE8",                  // Tu RFC emisor
-      Name: "JORGE CAMARENA GARCIA",         // Nombre fiscal
-      FiscalRegime: "612"                    // Régimen: Personas físicas con actividades empresariales
-    },
     Receiver: {
       Name: datosCliente.razon,
       Rfc: datosCliente.rfc,
-      CfdiUse: datosCliente.cfdi,
-      FiscalRegime: datosCliente.regimen,
+      CfdiUse: datosCliente.cfdi || 'G03',
+      FiscalRegime: datosCliente.regimen || '601',
       TaxZipCode: datosCliente.cp
     },
     CfdiType: 'I',
-    ExpeditionPlace: '37510',                // Tu CP de expedición
+    ExpeditionPlace: '64103', // Código postal del emisor
     Currency: 'MXN',
-    PaymentForm: datosCliente.formaPago,
-    PaymentMethod: datosCliente.metodoPago,
+    PaymentForm: datosCliente.formaPago || '01',
+    PaymentMethod: datosCliente.metodoPago || 'PUE',
     Exportation: '01',
-    Folio: String(Math.floor(Math.random() * 1000000)),  // Recomendado: control manual
-    Observations: datosCliente.comentarios || '',
     Items: [
       {
         Quantity: '1',
         ProductCode: '10111302',
         UnitCode: 'H87',
         Unit: 'Pieza',
-        Description: 'Producto demo emitido por el bot',
+        Description: datosCliente.comentarios || 'Producto demo emitido por el bot',
         UnitPrice: '100.00',
         Subtotal: '100.00',
         TaxObject: '02',
@@ -45,8 +38,8 @@ async function generarFacturaReal(datosCliente) {
             Rate: '0.16',
             Total: '16.00',
             Base: '100.00',
-            IsRetention: 'false',
-            IsFederalTax: 'true'
+            IsRetention: false,
+            IsFederalTax: true
           }
         ],
         Total: '116.00'
@@ -54,8 +47,8 @@ async function generarFacturaReal(datosCliente) {
     ]
   };
 
-  console.log('📤 Enviando factura (multiemisor)');
-  console.log(JSON.stringify(datosCliente, null, 2));
+  console.log('📤 Enviando factura en producción (API Web)');
+  console.log(JSON.stringify(factura, null, 2));
 
   try {
     const response = await axios.post(url, factura, {
@@ -79,8 +72,13 @@ async function generarFacturaReal(datosCliente) {
 
   } catch (error) {
     console.error('❌ Error al emitir factura:');
-    console.error(JSON.stringify(error.response?.data || error.message, null, 2));
-    throw new Error("Factura no generada correctamente.");
+    if (error.response) {
+      console.error(JSON.stringify(error.response.data, null, 2));
+      throw new Error('Factura no generada correctamente.');
+    } else {
+      console.error(error.message);
+      throw error;
+    }
   }
 }
 
