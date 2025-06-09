@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 global.ESTADO_COMPLEMENTO = {};
 global.ULTIMO_INTENTO = null;
 
-console.log('🧪 Usuario Facturama:', process.env.FACTURAMA_USER); // Verifica que esté cargando el .env
+console.log('🧪 Usuario Facturama:', process.env.FACTURAMA_USER);
 
 process.on('uncaughtException', err => {
   console.error('❌ Error no capturado:', err);
@@ -27,6 +27,7 @@ app.get('/', (req, res) => {
 app.post('/webhook', async (req, res) => {
   const from = req.body.From;
   const message = req.body.Body?.trim();
+
   console.log('📩 Mensaje recibido de', from, '→', message);
 
   const responder = (mensaje) => {
@@ -34,33 +35,24 @@ app.post('/webhook', async (req, res) => {
     res.send(`<Response><Message>${mensaje}</Message></Response>`);
   };
 
-  // Paso 1: RFC para complemento
+  // === COMPLEMENTO DE PAGO ===
+
   if (message.toLowerCase().startsWith('complemento')) {
     const partes = message.split(' ');
     const rfc = partes[1]?.trim();
 
-    if (!rfc) {
-      return responder('⚠️ Escribe *complemento* seguido del RFC. Ejemplo:\ncomplemento ROHA651106MI4');
-    }
+    if (!rfc) return responder('⚠️ Escribe *complemento* seguido del RFC. Ejemplo:\ncomplemento ROHA651106MI4');
 
     const facturas = await buscarFacturasPorRFC(rfc);
 
-    if (!facturas || facturas.length === 0) {
-      return responder('❌ No se encontró ninguna factura emitida a ese RFC.');
-    }
+    if (!facturas?.length) return responder('❌ No se encontró ninguna factura emitida a ese RFC.');
 
-    global.ESTADO_COMPLEMENTO[from] = {
-      rfc,
-      facturas
-    };
+    global.ESTADO_COMPLEMENTO[from] = { rfc, facturas };
 
-    let lista = facturas.map((f, i) => `*${i + 1}*. Folio: ${f.folio} - $${f.total} - ${f.metodo}`).join('\n');
-    return responder(
-      `📑 Se encontraron las siguientes facturas:\n\n${lista}\n\nEscribe el número de la factura que deseas usar.`
-    );
+    const lista = facturas.map((f, i) => `*${i + 1}*. Folio: ${f.folio} - $${f.total} - ${f.metodo}`).join('\n');
+    return responder(`📑 Se encontraron las siguientes facturas:\n\n${lista}\n\nEscribe el número de la factura que deseas usar.`);
   }
 
-  // Paso 2: Selección de factura
   if (global.ESTADO_COMPLEMENTO[from] && !global.ESTADO_COMPLEMENTO[from].facturaSeleccionada) {
     const seleccion = parseInt(message);
     const estado = global.ESTADO_COMPLEMENTO[from];
@@ -69,13 +61,10 @@ app.post('/webhook', async (req, res) => {
       return responder('⚠️ Por favor, elige un número válido de la lista anterior.');
     }
 
-    const facturaSeleccionada = estado.facturas[seleccion - 1];
-    estado.facturaSeleccionada = facturaSeleccionada;
-
+    estado.facturaSeleccionada = estado.facturas[seleccion - 1];
     return responder('📅 Ahora dime la fecha y forma de pago separadas por espacio. Ejemplo:\n2025-06-01 03');
   }
 
-  // Paso 3: Fecha y forma de pago
   if (global.ESTADO_COMPLEMENTO[from]?.facturaSeleccionada) {
     const estado = global.ESTADO_COMPLEMENTO[from];
     const [fecha, formaPago] = message.split(' ');
@@ -85,7 +74,7 @@ app.post('/webhook', async (req, res) => {
     }
 
     const cliente = await buscarCliente(estado.rfc);
-    if (!cliente || !cliente.correo) {
+    if (!cliente?.correo) {
       delete global.ESTADO_COMPLEMENTO[from];
       return responder('⚠️ No se encontró el correo del cliente en la hoja.');
     }
@@ -108,7 +97,7 @@ app.post('/webhook', async (req, res) => {
     const complemento = await generarComplementoPago(datosPago, cliente);
     delete global.ESTADO_COMPLEMENTO[from];
 
-    if (!complemento || !complemento.Id) {
+    if (!complemento?.Id) {
       return responder('❌ Error al generar el complemento de pago.');
     }
 
@@ -123,15 +112,16 @@ app.post('/webhook', async (req, res) => {
     return responder(`✅ Complemento generado para *${datosPago.rfc}*.\n📧 Enviado a *${cliente.correo}*.`);
   }
 
-  // Confirmación de factura
-  const afirmacion = message.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+  // === FACTURACIÓN ===
+
+  const afirmacion = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
   if (afirmacion === 'si' && global.ULTIMO_INTENTO) {
     const datos = global.ULTIMO_INTENTO;
     responder('📧 Procesando tu factura...');
 
     (async () => {
       try {
-        const factura = await generarFacturaReal({ ...datos, comentarios: datos.comentarios });
+        const factura = await generarFacturaReal({ ...datos });
         await enviarCorreo(datos.correo, { ...datos, factura, tipo: 'factura' });
         global.ULTIMO_INTENTO = null;
       } catch (error) {
@@ -142,22 +132,15 @@ app.post('/webhook', async (req, res) => {
     return;
   }
 
-  // Instrucción para generar factura
   if (message.toLowerCase() === 'facturar') {
-    return responder(
-      `📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\n` +
-      `Ejemplo:\n*URVAN BLANCA\nP/GRX425F\nS/K9033313\nO/7134581\nFACTURA A NISSAN CENTRO MAX*`
-    );
+    return responder(`📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\nEjemplo:\n*URVAN BLANCA\nP/GRX425F\nS/K9033313\nO/7134581\nFACTURA A NISSAN CENTRO MAX*`);
   }
 
-  // Análisis de datos para facturación
   if (message.toLowerCase().includes("factura a")) {
     const datos = analizarMensaje(message);
     const cliente = await buscarCliente(datos.cliente || '');
 
-    if (!cliente) {
-      return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
-    }
+    if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
 
     const mensajeLower = message.toLowerCase();
     if (mensajeLower.includes('pue')) {
@@ -196,7 +179,8 @@ app.post('/webhook', async (req, res) => {
     );
   }
 
-  // Respuesta tipo chatbot
+  // === CHAT GENERAL ===
+
   try {
     const respuestaAI = await responderChat(message);
     const mensajeFijo = "💬 Si deseas una factura, escribe *facturar*. Para complemento, escribe *complemento {RFC}*.";
