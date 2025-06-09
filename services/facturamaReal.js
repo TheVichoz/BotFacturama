@@ -1,33 +1,25 @@
 const axios = require('axios');
 
-// Generar factura en producción (Facturama 4.0)
 async function generarFacturaReal(datosCliente) {
-  const url = 'https://api.facturama.mx/api-lite/2/cfdis'; // Producción
+  const url = 'https://api.facturama.mx/api-lite/3/cfdis'; // ✅ Multiemisor producción
 
-  // Construir token de autenticación
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
   ).toString('base64');
 
-  // 🔍 Mostrar credenciales para verificar si .env está cargando bien
-  console.log("🔍 USUARIO:", process.env.FACTURAMA_USER);
-  console.log("🔍 CONTRASEÑA:", process.env.FACTURAMA_PASS);
-  console.log("🔐 AUTH HEADER:", auth);
-
-  // Estructura del CFDI 4.0
   const factura = {
     Receiver: {
       Name: datosCliente.razon,
       Rfc: datosCliente.rfc,
-      CfdiUse: 'G03',
-      FiscalRegime: '601',
+      CfdiUse: 'G03',              // 🔧 Fijo como en sandbox
+      FiscalRegime: '601',         // 🔧 Fijo como en sandbox
       TaxZipCode: datosCliente.cp
     },
     CfdiType: 'I',
     ExpeditionPlace: '64103',
     Currency: 'MXN',
-    PaymentForm: '01',
-    PaymentMethod: 'PUE',
+    PaymentForm: '01',             // 🔧 Efectivo
+    PaymentMethod: 'PUE',          // 🔧 Pago en una sola exhibición
     Exportation: '01',
     Items: [
       {
@@ -54,7 +46,7 @@ async function generarFacturaReal(datosCliente) {
     ]
   };
 
-  console.log("📤 Enviando factura fija (modo prueba en prod)");
+  console.log("📤 Enviando factura (multiemisor)");
   console.log(JSON.stringify(factura, null, 2));
 
   try {
@@ -70,26 +62,21 @@ async function generarFacturaReal(datosCliente) {
 
     const { Id, Folio, Links } = response.data;
 
-    if (!Id || !Folio || !Links?.Pdf) {
-      console.error('❌ No se generó la factura. Respuesta incompleta.');
-      throw new Error("Factura no generada correctamente.");
-    }
-
     return {
       id: Id,
       folio: Folio,
-      pdf: Links.Pdf,
-      xml: Links.Xml
+      pdf: Links?.Pdf,
+      xml: Links?.Xml
     };
 
   } catch (error) {
-    console.error('❌ Error al emitir factura fija:');
+    console.error('❌ Error al emitir factura:');
     if (error.response) {
       console.error(JSON.stringify(error.response.data, null, 2));
     } else {
       console.error(error.message);
     }
-    throw error;
+    throw new Error("Factura no generada correctamente.");
   }
 }
 
