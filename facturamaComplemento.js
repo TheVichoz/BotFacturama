@@ -1,3 +1,4 @@
+// facturamaComplemento.js
 const axios = require('axios');
 
 const FACTURAMA_API = 'https://api.facturama.mx';
@@ -10,9 +11,7 @@ const AUTH_HEADER = {
   'Content-Type': 'application/json',
 };
 
-/**
- * 🔍 Buscar TODAS las facturas emitidas por RFC (PUE o PPD)
- */
+// 🔍 Buscar todas las facturas emitidas por RFC
 async function buscarFacturasPorRFC(rfc) {
   try {
     const res = await axios.get(`${FACTURAMA_API}/Cfdi?type=issued`, {
@@ -28,12 +27,12 @@ async function buscarFacturasPorRFC(rfc) {
         total: parseFloat(f.Total),
         subtotal: parseFloat(f.Subtotal) || parseFloat(f.Total) / 1.16,
         moneda: f.Currency || 'MXN',
-        folio: f.Folio || '1',
-        serie: f.Serie || 'A',
+        folio: f.Folio || '',
+        serie: f.Serie || '',
         id: f.Id,
         metodo: f.PaymentMethod || 'PUE',
       }))
-      .sort((a, b) => parseInt(b.folio) - parseInt(a.folio)); // Orden descendente por folio
+      .sort((a, b) => parseInt(b.folio) - parseInt(a.folio));
 
     return facturasFiltradas;
   } catch (err) {
@@ -42,9 +41,7 @@ async function buscarFacturasPorRFC(rfc) {
   }
 }
 
-/**
- * 🧾 Generar complemento de pago (con datos del cliente ya obtenidos)
- */
+// 🧾 Generar complemento de pago
 async function generarComplementoPago(datosPago, receptor) {
   if (!receptor?.rfc || !receptor?.razon) {
     console.error('❌ Error: RFC o Nombre del receptor están vacíos.');
@@ -55,14 +52,14 @@ async function generarComplementoPago(datosPago, receptor) {
 
   const payload = {
     CfdiType: 'P',
-    NameId: '14',
-    ExpeditionPlace: '64103',
+    Exportation: '01',
+    ExpeditionPlace: '37510', // ✅ Lugar de expedición válido
     Receiver: {
       Rfc: receptor.rfc,
       Name: receptor.razon,
       CfdiUse: 'CP01',
       FiscalRegime: receptor.regimen || '601',
-      TaxZipCode: receptor.cp || '64000',
+      TaxZipCode: receptor.cp || '37510',
     },
     Complemento: {
       Payments: [
@@ -73,8 +70,8 @@ async function generarComplementoPago(datosPago, receptor) {
           RelatedDocuments: [
             {
               Uuid: datosPago.uuid,
-              Serie: datosPago.serie || 'A',
-              Folio: datosPago.folio || '1',
+              Serie: datosPago.serie || '',
+              Folio: datosPago.folio || '',
               Currency: datosPago.moneda || 'MXN',
               PaymentMethod: 'PPD',
               PartialityNumber: 1,

@@ -28,7 +28,7 @@ async function generarFacturaReal(datosCliente) {
         ProductCode: '10111302',
         UnitCode: 'H87',
         Unit: 'Pieza',
-        Description: datosCliente.comentarios || 'Producto demo emitido por el bot',
+        Description: 'Producto emitido por el bot', // ahora descripción genérica
         UnitPrice: '100.00',
         Subtotal: '100.00',
         TaxObject: '02',
@@ -44,7 +44,8 @@ async function generarFacturaReal(datosCliente) {
         ],
         Total: '116.00'
       }
-    ]
+    ],
+    Observations: datosCliente.comentarios || '' // 🔄 Ahora se muestra en Observaciones
   };
 
   console.log('📤 Enviando factura en producción (API Web)');
@@ -61,7 +62,6 @@ async function generarFacturaReal(datosCliente) {
     console.log('📦 RESPUESTA Facturama:');
     console.log(JSON.stringify(response.data, null, 2));
 
-    // Retornar todos los campos útiles para correo
     return {
       id: response.data.Id,
       folio: response.data.Folio,
