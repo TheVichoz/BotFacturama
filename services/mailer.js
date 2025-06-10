@@ -25,7 +25,7 @@ async function enviarCorreo(destinatario, datos) {
 
   try {
     const tipo = 'issued';
-    const id = datos.factura?.id || datos.id;
+    const id = datos.id;
 
     // Descargar PDF
     const pdfRes = await axios.get(`${baseUrl}/cfdi/pdf/${tipo}/${id}`, {

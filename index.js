@@ -7,7 +7,7 @@ const { buscarFacturasPorRFC, generarComplementoPago } = require('./facturamaCom
 const { responderChat } = require('./services/chatModel');
 const { analizarMensaje } = require('./analizarMensaje');
 const { buscarCliente } = require('./buscarCliente');
-const { probarTokenFacturama } = require('./services/probarTokenFacturama'); // ✅ Nueva línea
+const { probarTokenFacturama } = require('./services/probarTokenFacturama');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -16,7 +16,7 @@ global.ESTADO_COMPLEMENTO = {};
 global.ULTIMO_INTENTO = null;
 
 console.log('🧪 Usuario Facturama:', process.env.FACTURAMA_USER);
-probarTokenFacturama(); // ✅ Verificamos si el token funciona al iniciar
+probarTokenFacturama();
 
 process.on('uncaughtException', err => {
   console.error('❌ Error no capturado:', err);
@@ -121,7 +121,15 @@ app.post('/webhook', async (req, res) => {
     (async () => {
       try {
         const factura = await generarFacturaReal({ ...datos });
-        await enviarCorreo(datos.correo, { ...datos, factura, tipo: 'factura' });
+
+        await enviarCorreo(datos.correo, {
+          ...datos,
+          tipo: 'factura',
+          folio: factura.Folio || factura.folio || '',
+          id: factura.Id || factura.id || '',
+          factura
+        });
+
         global.ULTIMO_INTENTO = null;
       } catch (error) {
         console.error('❌ Error al generar factura:', JSON.stringify(error?.response?.data || error.message, null, 2));

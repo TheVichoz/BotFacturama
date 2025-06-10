@@ -2,7 +2,7 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  const url = 'https://api.facturama.mx/3/cfdis'; // ✅ Endpoint correcto para API Web (no multiemisor)
+  const url = 'https://api.facturama.mx/3/cfdis'; // ✅ Endpoint correcto para API Web
 
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
@@ -17,7 +17,7 @@ async function generarFacturaReal(datosCliente) {
       TaxZipCode: datosCliente.cp
     },
     CfdiType: 'I',
-    ExpeditionPlace: '37510', // Código postal del emisor
+    ExpeditionPlace: '37510', // Código postal del emisor autorizado
     Currency: 'MXN',
     PaymentForm: datosCliente.formaPago || '01',
     PaymentMethod: datosCliente.metodoPago || 'PUE',
@@ -61,13 +61,16 @@ async function generarFacturaReal(datosCliente) {
     console.log('📦 RESPUESTA Facturama:');
     console.log(JSON.stringify(response.data, null, 2));
 
-    const { Id, Folio, Links } = response.data;
-
+    // Retornar todos los campos útiles para correo
     return {
-      id: Id,
-      folio: Folio,
-      pdf: Links?.Pdf,
-      xml: Links?.Xml
+      id: response.data.Id,
+      folio: response.data.Folio,
+      total: response.data.Total,
+      subtotal: response.data.Subtotal,
+      uuid: response.data.Complement?.TaxStamp?.Uuid || null,
+      moneda: response.data.Currency,
+      pdf: response.data.Links?.Pdf,
+      xml: response.data.Links?.Xml
     };
 
   } catch (error) {
