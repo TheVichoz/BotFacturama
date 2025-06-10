@@ -57,6 +57,14 @@ async function buscarCliente(nombreOBuscado) {
 
   const rows = res.data.values;
 
+  // Leer precio base desde V1
+  const precioBaseRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_NAME}!V1`,
+  });
+
+  const precioBase = parseFloat(precioBaseRes.data.values[0][0]) || 0;
+
   for (const row of rows) {
     const nombre = row[0]?.trim();
     const rfc = row[1]?.trim();
@@ -66,6 +74,8 @@ async function buscarCliente(nombreOBuscado) {
     const usoCfdiTexto = row[6]?.trim();
     const correos = (row[8] || '').toString().trim();
     const cp = row[17]?.trim();
+    const descuentoStr = row[19]; // Columna T
+    const descuento = parseFloat(descuentoStr) || 0;
 
     const buscado = nombreOBuscado?.trim().toUpperCase();
     const nombreActual = nombre?.toUpperCase();
@@ -86,7 +96,8 @@ async function buscarCliente(nombreOBuscado) {
       const formaPago = formaPagoMap[normalizarTexto(formaPagoTexto)] || '99';
       const cfdi = usoCFDIMap[normalizarTexto(usoCfdiTexto)] || 'G03';
 
-      // Log completo para depuración
+      const precioFinal = precioBase - (precioBase * descuento / 100);
+
       console.log("📋 Datos cargados desde Google Sheets:");
       console.log({
         rfc,
@@ -96,7 +107,10 @@ async function buscarCliente(nombreOBuscado) {
         correo: correosValidos.join(','),
         regimen: regimenFinal,
         metodoPago: metodoPago || 'PUE',
-        formaPago
+        formaPago,
+        precioBase,
+        descuento,
+        precioFinal
       });
 
       return {
@@ -107,7 +121,10 @@ async function buscarCliente(nombreOBuscado) {
         correo: correosValidos.join(','),
         regimen: regimenFinal,
         metodoPago: metodoPago || 'PUE',
-        formaPago
+        formaPago,
+        precioBase,
+        descuento,
+        precioFinal
       };
     }
   }

@@ -7,6 +7,7 @@ const { buscarFacturasPorRFC, generarComplementoPago } = require('./facturamaCom
 const { responderChat } = require('./services/chatModel');
 const { analizarMensaje } = require('./analizarMensaje');
 const { buscarCliente } = require('./buscarCliente');
+const { buscarProducto } = require('./buscarProducto'); // NUEVO
 const { probarTokenFacturama } = require('./services/probarTokenFacturama');
 
 const app = express();
@@ -146,8 +147,10 @@ app.post('/webhook', async (req, res) => {
   if (message.toLowerCase().includes("factura a")) {
     const datos = analizarMensaje(message);
     const cliente = await buscarCliente(datos.cliente || '');
+    const producto = await buscarProducto(message); // NUEVO
 
     if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
+    if (!producto) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
 
     const mensajeLower = message.toLowerCase();
     if (mensajeLower.includes('pue')) {
@@ -169,6 +172,10 @@ app.post('/webhook', async (req, res) => {
       regimen: cliente.regimen,
       metodoPago: cliente.metodoPago,
       formaPago: cliente.formaPago,
+      precioBase: cliente.precioBase,
+      descuento: cliente.descuento,
+      precioFinal: cliente.precioFinal,
+      producto: producto,
       comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
     };
 
@@ -181,6 +188,12 @@ app.post('/webhook', async (req, res) => {
       `🔹 Forma de pago: ${cliente.formaPago}\n` +
       `🔹 CP: ${cliente.cp}\n` +
       `🔹 CFDI: ${cliente.cfdi}\n` +
+      `🔹 Producto: ${producto.Description}\n` +
+      `🔹 Código SAT: ${producto.ProductCode}\n` +
+      `🔹 Unidad: ${producto.Unit}\n` +
+      `🔹 Precio base: $${cliente.precioBase}\n` +
+      `🔹 Descuento: ${cliente.descuento}%\n` +
+      `🔹 Total con descuento: $${cliente.precioFinal}\n` +
       `🔹 Comentarios: ${global.ULTIMO_INTENTO.comentarios}\n\n` +
       `Responde con *Sí* para emitir la factura.`
     );

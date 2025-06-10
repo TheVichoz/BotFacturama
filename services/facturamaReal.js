@@ -2,11 +2,26 @@
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
-  const url = 'https://api.facturama.mx/3/cfdis'; // ✅ Endpoint correcto para API Web
+  const url = 'https://api.facturama.mx/3/cfdis';
 
   const auth = 'Basic ' + Buffer.from(
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
   ).toString('base64');
+
+  // Validaciones y conversiones seguras
+  const precioBase = parseFloat(datosCliente.precioBase || 0);
+  const descuento = parseFloat(datosCliente.descuento || 0);
+  const precioFinal = parseFloat(datosCliente.precioFinal || 0);
+  const iva = +(precioFinal * 0.16).toFixed(2);
+  const totalConIva = +(precioFinal + iva).toFixed(2);
+
+  // Validación de producto
+  const producto = datosCliente.producto || {
+    ProductCode: '10111302',
+    UnitCode: 'H87',
+    Unit: 'Pieza',
+    Description: 'Producto genérico'
+  };
 
   const factura = {
     Receiver: {
@@ -17,35 +32,35 @@ async function generarFacturaReal(datosCliente) {
       TaxZipCode: datosCliente.cp
     },
     CfdiType: 'I',
-    ExpeditionPlace: '37510', // Código postal del emisor autorizado
+    ExpeditionPlace: '37510',
     Currency: 'MXN',
     PaymentForm: datosCliente.formaPago || '01',
     PaymentMethod: datosCliente.metodoPago || 'PUE',
     Exportation: '01',
     Items: [
       {
-        Quantity: '1',
-        ProductCode: '10111302',
-        UnitCode: 'H87',
-        Unit: 'Pieza',
-        Description: 'Producto emitido por el bot', // ahora descripción genérica
-        UnitPrice: '100.00',
-        Subtotal: '100.00',
+        Quantity: 1,
+        ProductCode: producto.ProductCode,
+        UnitCode: producto.UnitCode,
+        Unit: producto.Unit,
+        Description: `${producto.Description} con ${descuento}% de descuento aplicado`,
+        UnitPrice: precioFinal,
+        Subtotal: precioFinal,
         TaxObject: '02',
         Taxes: [
           {
             Name: 'IVA',
-            Rate: '0.16',
-            Total: '16.00',
-            Base: '100.00',
+            Rate: 0.16,
+            Total: iva,
+            Base: precioFinal,
             IsRetention: false,
             IsFederalTax: true
           }
         ],
-        Total: '116.00'
+        Total: totalConIva
       }
     ],
-    Observations: datosCliente.comentarios || '' // 🔄 Ahora se muestra en Observaciones
+    Observations: datosCliente.comentarios || ''
   };
 
   console.log('📤 Enviando factura en producción (API Web)');
