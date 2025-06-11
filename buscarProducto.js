@@ -1,3 +1,4 @@
+// services/buscarProducto.js
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
@@ -23,7 +24,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  const range = `${SHEET_NAME}!A2:H`; // Incluye columnas relevantes
+  const range = `${SHEET_NAME}!A2:H`;
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -36,9 +37,8 @@ async function buscarProducto(mensajeUsuario = '') {
     const nombre = row[1] || '';         // Columna B: Nombre
     const descripcion = row[2] || '';    // Columna C: Descripción
     const unidad = row[5] || '';         // Columna F: Unidad de medida
-    const claveSAT = row[6] || '';       // Columna G: Producto/Servicio SAT
-    const precioStr = (row[7] || '').toString().replace('$', '').replace(',', '').trim();
-    const precio = parseFloat(precioStr) || 0;
+    const claveSAT = row[6] || '';       // Columna G: Clave SAT
+    const precio = parseFloat(row[7]?.replace('$', '').replace(',', '')) || 0; // Columna H: Precio
 
     const nombreNormalizado = normalizarTexto(nombre);
 
@@ -53,7 +53,7 @@ async function buscarProducto(mensajeUsuario = '') {
     }
   }
 
-  return null; // Si no se encontró ningún producto
+  return null;
 }
 
 module.exports = { buscarProducto };
