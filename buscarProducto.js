@@ -1,13 +1,13 @@
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
-const SHEET_NAME = 'Productos'; // Revisa que se llame así tal cual en la hoja
+const SHEET_NAME = 'Productos'; // Asegúrate que la hoja se llama así
 
 function normalizarTexto(texto = '') {
   return texto
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, '') // elimina acentos
-    .replace(/[^\w\s]/gi, '')        // elimina signos
+    .replace(/[\u0300-\u036f]/g, '') // Elimina acentos
+    .replace(/[^\w\s]/gi, '')        // Elimina signos
     .trim()
     .toLowerCase();
 }
@@ -23,7 +23,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  const range = `${SHEET_NAME}!A3:H`; // los datos empiezan en la fila 3
+  const range = `${SHEET_NAME}!A3:H`; // ← Los datos empiezan en la fila 3
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -34,7 +34,7 @@ async function buscarProducto(mensajeUsuario = '') {
   console.log('🧪 Filas cargadas de Productos:', rows.length);
   console.log('🧪 Primeras filas:', rows.slice(0, 2));
 
-  // ✅ Obtener la primera línea no vacía del mensaje
+  // ✅ Buscar la primera línea real con contenido
   const primeraLinea = mensajeUsuario
     .split('\n')
     .map(l => l.trim())
