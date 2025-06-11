@@ -1,4 +1,3 @@
-// services/buscarProducto.js
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
@@ -7,8 +6,8 @@ const SHEET_NAME = 'Productos';
 function normalizarTexto(texto = '') {
   return texto
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, '') // Elimina acentos
-    .replace(/[^\w\s]/gi, '')        // Elimina signos de puntuación
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/gi, '')
     .trim()
     .toLowerCase();
 }
@@ -33,16 +32,27 @@ async function buscarProducto(mensajeUsuario = '') {
   const rows = res.data.values;
   const textoUsuario = normalizarTexto(mensajeUsuario);
 
+  let palabraClave = null;
+  if (textoUsuario.includes('parabrisas')) {
+    palabraClave = 'parabrisas';
+  } else if (textoUsuario.includes('quemacocos')) {
+    palabraClave = 'quemacocos';
+  }
+
+  if (!palabraClave) {
+    return null;
+  }
+
   for (const row of rows) {
-    const nombre = row[1] || '';         // Columna B: Nombre
-    const descripcion = row[2] || '';    // Columna C: Descripción
-    const unidad = row[5] || '';         // Columna F: Unidad de medida
-    const claveSAT = row[6] || '';       // Columna G: Clave SAT
-    const precio = parseFloat(row[7]?.replace('$', '').replace(',', '')) || 0; // Columna H: Precio
+    const nombre = row[1] || '';
+    const descripcion = row[2] || '';
+    const unidad = row[5] || '';
+    const claveSAT = row[6] || '';
+    const precio = parseFloat(row[7]?.replace('$', '').replace(',', '')) || 0;
 
     const nombreNormalizado = normalizarTexto(nombre);
 
-    if (textoUsuario.includes(nombreNormalizado)) {
+    if (nombreNormalizado.includes(palabraClave)) {
       return {
         Description: descripcion || nombre,
         ProductCode: claveSAT.replace(/\[|\]/g, ''),
