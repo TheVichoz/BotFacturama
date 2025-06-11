@@ -7,7 +7,7 @@ function normalizarTexto(texto = '') {
   return texto
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, '') // elimina acentos
-    .replace(/[^\w\s]/gi, '')       // elimina signos de puntuación
+    .replace(/[^\w\s]/gi, '')        // elimina puntuación
     .trim()
     .toLowerCase();
 }
@@ -23,7 +23,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  const range = `${SHEET_NAME}!A2:H`;
+  const range = `${SHEET_NAME}!A3:H`; // ⬅️ ¡Aquí el cambio!
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -32,7 +32,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const rows = res.data.values;
   const textoUsuario = normalizarTexto(mensajeUsuario);
 
-  // Solo permitir productos válidos: "parabrisas" o "quemacocos"
+  // Detectar palabra clave
   let palabraClave = null;
   if (textoUsuario.includes('parabrisas')) {
     palabraClave = 'parabrisas';
@@ -40,22 +40,22 @@ async function buscarProducto(mensajeUsuario = '') {
     palabraClave = 'quemacocos';
   }
 
-  if (!palabraClave) {
-    return null; // mensaje no contiene palabra válida
-  }
+  if (!palabraClave) return null;
 
   for (const row of rows) {
-    const nombre = row[1] || '';         // Columna B: Nombre
-    const descripcion = row[2] || '';    // Columna C: Descripción
-    const unidad = row[5] || '';         // Columna F: Unidad de medida
-    const claveSAT = row[6] || '';       // Columna G: Clave SAT
-    const precioStr = row[7] || '';      // Columna H: Precio
+    const nombre = row[1] || '';          // Columna B
+    const descripcion = row[2] || '';     // Columna C
+    const unidad = row[5] || '';          // Columna F
+    const claveSAT = row[6] || '';        // Columna G
+    const precioStr = row[7] || '';       // Columna H
 
     const nombreNormalizado = normalizarTexto(nombre);
     const precio = parseFloat(precioStr.toString().replace('$', '').replace(',', '')) || 0;
 
-    // Comparar nombre exacto normalizado
-    if (nombreNormalizado === palabraClave) {
+    // Mostrar en consola qué está comparando
+    console.log('Comparando:', nombreNormalizado, 'con', palabraClave);
+
+    if (nombreNormalizado.includes(palabraClave)) {
       return {
         Description: descripcion || nombre,
         ProductCode: claveSAT.replace(/\[|\]/g, ''),
@@ -66,7 +66,7 @@ async function buscarProducto(mensajeUsuario = '') {
     }
   }
 
-  return null; // No se encontró coincidencia exacta
+  return null;
 }
 
 module.exports = { buscarProducto };
