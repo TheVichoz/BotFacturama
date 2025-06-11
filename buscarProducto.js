@@ -6,8 +6,8 @@ const SHEET_NAME = 'Productos';
 function normalizarTexto(texto = '') {
   return texto
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\w\s]/gi, '')
+    .replace(/[\u0300-\u036f]/g, '') // elimina acentos
+    .replace(/[^\w\s]/gi, '')       // elimina signos de puntuación
     .trim()
     .toLowerCase();
 }
@@ -32,6 +32,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const rows = res.data.values;
   const textoUsuario = normalizarTexto(mensajeUsuario);
 
+  // Solo permitir productos válidos: "parabrisas" o "quemacocos"
   let palabraClave = null;
   if (textoUsuario.includes('parabrisas')) {
     palabraClave = 'parabrisas';
@@ -40,19 +41,21 @@ async function buscarProducto(mensajeUsuario = '') {
   }
 
   if (!palabraClave) {
-    return null;
+    return null; // mensaje no contiene palabra válida
   }
 
   for (const row of rows) {
-    const nombre = row[1] || '';
-    const descripcion = row[2] || '';
-    const unidad = row[5] || '';
-    const claveSAT = row[6] || '';
-    const precio = parseFloat(row[7]?.replace('$', '').replace(',', '')) || 0;
+    const nombre = row[1] || '';         // Columna B: Nombre
+    const descripcion = row[2] || '';    // Columna C: Descripción
+    const unidad = row[5] || '';         // Columna F: Unidad de medida
+    const claveSAT = row[6] || '';       // Columna G: Clave SAT
+    const precioStr = row[7] || '';      // Columna H: Precio
 
     const nombreNormalizado = normalizarTexto(nombre);
+    const precio = parseFloat(precioStr.toString().replace('$', '').replace(',', '')) || 0;
 
-    if (nombreNormalizado.includes(palabraClave)) {
+    // Comparar nombre exacto normalizado
+    if (nombreNormalizado === palabraClave) {
       return {
         Description: descripcion || nombre,
         ProductCode: claveSAT.replace(/\[|\]/g, ''),
@@ -63,7 +66,7 @@ async function buscarProducto(mensajeUsuario = '') {
     }
   }
 
-  return null;
+  return null; // No se encontró coincidencia exacta
 }
 
 module.exports = { buscarProducto };
