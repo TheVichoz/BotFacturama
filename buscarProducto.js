@@ -1,13 +1,13 @@
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
-const SHEET_NAME = 'Productos'; // Asegúrate que la pestaña se llama así, sin espacios
+const SHEET_NAME = 'Productos'; // Revisa que se llame así tal cual en la hoja
 
 function normalizarTexto(texto = '') {
   return texto
-    .normalize("NFD")                       // separa acentos
-    .replace(/[\u0300-\u036f]/g, '')       // elimina acentos
-    .replace(/[^\w\s]/gi, '')              // elimina signos
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, '') // elimina acentos
+    .replace(/[^\w\s]/gi, '')        // elimina signos
     .trim()
     .toLowerCase();
 }
@@ -23,7 +23,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  const range = `${SHEET_NAME}!A3:H`; // los datos empiezan en fila 3
+  const range = `${SHEET_NAME}!A3:H`; // los datos empiezan en la fila 3
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -34,12 +34,19 @@ async function buscarProducto(mensajeUsuario = '') {
   console.log('🧪 Filas cargadas de Productos:', rows.length);
   console.log('🧪 Primeras filas:', rows.slice(0, 2));
 
-  // 🧠 Solo considerar la primera línea del mensaje
-  const primeraLinea = mensajeUsuario.split('\n')[0] || '';
+  // ✅ Obtener la primera línea no vacía del mensaje
+  const primeraLinea = mensajeUsuario
+    .split('\n')
+    .map(l => l.trim())
+    .find(l => l.length > 0) || '';
+
   const primeraLineaNormalizada = normalizarTexto(primeraLinea);
 
+  console.log('📩 Primera línea cruda:', JSON.stringify(primeraLinea));
+  console.log('📩 Primera línea normalizada:', primeraLineaNormalizada);
+
   if (primeraLineaNormalizada !== 'parabrisas') {
-    console.log('⚠️ La primera línea no es exactamente "parabrisas":', primeraLineaNormalizada);
+    console.log('⚠️ La primera línea no es exactamente "parabrisas"');
     return null;
   }
 
