@@ -7,7 +7,7 @@ const { buscarFacturasPorRFC, generarComplementoPago } = require('./facturamaCom
 const { responderChat } = require('./services/chatModel');
 const { analizarMensaje } = require('./analizarMensaje');
 const { buscarCliente } = require('./buscarCliente');
-const { buscarProducto } = require('./buscarProducto'); // NUEVO
+const { buscarProducto } = require('./buscarProducto');
 const { probarTokenFacturama } = require('./services/probarTokenFacturama');
 
 const app = express();
@@ -147,7 +147,7 @@ app.post('/webhook', async (req, res) => {
   if (message.toLowerCase().includes("factura a")) {
     const datos = analizarMensaje(message);
     const cliente = await buscarCliente(datos.cliente || '');
-    const producto = await buscarProducto(); // ← puedes personalizar con datos.producto
+    const producto = await buscarProducto(message); // ← 👈 SE CORRIGIÓ AQUÍ: se pasa el mensaje
 
     if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
     if (!producto) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
