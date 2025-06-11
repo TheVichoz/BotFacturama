@@ -147,21 +147,12 @@ app.post('/webhook', async (req, res) => {
   if (message.toLowerCase().includes("factura a")) {
     const datos = analizarMensaje(message);
     const cliente = await buscarCliente(datos.cliente || '');
-    const producto = await buscarProducto(message); // NUEVO
+    const producto = await buscarProducto(); // ← puedes personalizar con datos.producto
 
     if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
     if (!producto) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
 
-    const mensajeLower = message.toLowerCase();
-    if (mensajeLower.includes('pue')) {
-      cliente.metodoPago = 'PUE';
-      cliente.formaPago = '03';
-    } else if (mensajeLower.includes('ppd')) {
-      cliente.metodoPago = 'PPD';
-      cliente.formaPago = '99';
-    } else if (cliente.metodoPago === 'PPD') {
-      cliente.formaPago = '99';
-    }
+    const precioFinal = +(producto.precioBase - (producto.precioBase * cliente.descuento / 100)).toFixed(2);
 
     global.ULTIMO_INTENTO = {
       rfc: cliente.rfc,
@@ -172,10 +163,10 @@ app.post('/webhook', async (req, res) => {
       regimen: cliente.regimen,
       metodoPago: cliente.metodoPago,
       formaPago: cliente.formaPago,
-      precioBase: cliente.precioBase,
+      precioBase: producto.precioBase,
       descuento: cliente.descuento,
-      precioFinal: cliente.precioFinal,
-      producto: producto,
+      precioFinal,
+      descripcion: producto.descripcion,
       comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
     };
 
@@ -188,12 +179,10 @@ app.post('/webhook', async (req, res) => {
       `🔹 Forma de pago: ${cliente.formaPago}\n` +
       `🔹 CP: ${cliente.cp}\n` +
       `🔹 CFDI: ${cliente.cfdi}\n` +
-      `🔹 Producto: ${producto.Description}\n` +
-      `🔹 Código SAT: ${producto.ProductCode}\n` +
-      `🔹 Unidad: ${producto.Unit}\n` +
-      `🔹 Precio base: $${cliente.precioBase}\n` +
+      `🔹 Producto: ${producto.descripcion}\n` +
+      `🔹 Precio base: $${producto.precioBase}\n` +
       `🔹 Descuento: ${cliente.descuento}%\n` +
-      `🔹 Total con descuento: $${cliente.precioFinal}\n` +
+      `🔹 Total con descuento: $${precioFinal}\n` +
       `🔹 Comentarios: ${global.ULTIMO_INTENTO.comentarios}\n\n` +
       `Responde con *Sí* para emitir la factura.`
     );

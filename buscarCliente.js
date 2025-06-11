@@ -49,6 +49,17 @@ async function buscarCliente(nombreOBuscado) {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
+  // Leer encabezados para encontrar la columna "Descuento"
+  const headerRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_NAME}!A1:Z1`,
+  });
+  const headers = headerRes.data.values[0];
+  const descuentoIndex = headers.findIndex(h =>
+    normalizarTexto(h).includes("descuento")
+  );
+
+  // Leer todas las filas de datos
   const range = `${SHEET_NAME}!A2:Z`;
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -56,14 +67,6 @@ async function buscarCliente(nombreOBuscado) {
   });
 
   const rows = res.data.values;
-
-  // Leer precio base desde V1
-  const precioBaseRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_NAME}!V1`,
-  });
-
-  const precioBase = parseFloat(precioBaseRes.data.values[0][0]) || 0;
 
   for (const row of rows) {
     const nombre = row[0]?.trim();
@@ -74,7 +77,7 @@ async function buscarCliente(nombreOBuscado) {
     const usoCfdiTexto = row[6]?.trim();
     const correos = (row[8] || '').toString().trim();
     const cp = row[17]?.trim();
-    const descuentoStr = row[19]; // Columna T
+    const descuentoStr = row[descuentoIndex] || '0';
     const descuento = parseFloat(descuentoStr) || 0;
 
     const buscado = nombreOBuscado?.trim().toUpperCase();
@@ -96,9 +99,7 @@ async function buscarCliente(nombreOBuscado) {
       const formaPago = formaPagoMap[normalizarTexto(formaPagoTexto)] || '99';
       const cfdi = usoCFDIMap[normalizarTexto(usoCfdiTexto)] || 'G03';
 
-      const precioFinal = precioBase - (precioBase * descuento / 100);
-
-      console.log("📋 Datos cargados desde Google Sheets:");
+      console.log("📋 Cliente encontrado en hoja:");
       console.log({
         rfc,
         razon: nombre,
@@ -108,9 +109,7 @@ async function buscarCliente(nombreOBuscado) {
         regimen: regimenFinal,
         metodoPago: metodoPago || 'PUE',
         formaPago,
-        precioBase,
-        descuento,
-        precioFinal
+        descuento
       });
 
       return {
@@ -122,9 +121,7 @@ async function buscarCliente(nombreOBuscado) {
         regimen: regimenFinal,
         metodoPago: metodoPago || 'PUE',
         formaPago,
-        precioBase,
-        descuento,
-        precioFinal
+        descuento
       };
     }
   }

@@ -1,4 +1,3 @@
-// services/facturamaReal.js
 const axios = require('axios');
 
 async function generarFacturaReal(datosCliente) {
@@ -8,14 +7,14 @@ async function generarFacturaReal(datosCliente) {
     process.env.FACTURAMA_USER + ':' + process.env.FACTURAMA_PASS
   ).toString('base64');
 
-  // Validaciones y conversiones seguras
+  // === Datos numéricos seguros ===
   const precioBase = parseFloat(datosCliente.precioBase || 0);
   const descuento = parseFloat(datosCliente.descuento || 0);
-  const precioFinal = parseFloat(datosCliente.precioFinal || 0);
+  const precioFinal = parseFloat(datosCliente.precioFinal || (precioBase - (precioBase * descuento / 100)));
   const iva = +(precioFinal * 0.16).toFixed(2);
   const totalConIva = +(precioFinal + iva).toFixed(2);
 
-  // Validación de producto
+  // === Datos de producto (por defecto si no se proporciona) ===
   const producto = datosCliente.producto || {
     ProductCode: '10111302',
     UnitCode: 'H87',
@@ -23,6 +22,7 @@ async function generarFacturaReal(datosCliente) {
     Description: 'Producto genérico'
   };
 
+  // === Construcción de factura ===
   const factura = {
     Receiver: {
       Name: datosCliente.razon,
