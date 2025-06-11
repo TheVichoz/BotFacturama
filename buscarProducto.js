@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
-const SHEET_NAME = 'Productos'; // Asegúrate que se llama así tal cual en la pestaña de Google Sheets
+const SHEET_NAME = 'Productos'; // Asegúrate que la pestaña se llama así, sin espacios
 
 function normalizarTexto(texto = '') {
   return texto
@@ -23,23 +23,23 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  // 👇 Los datos empiezan en la fila 3
-  const range = `${SHEET_NAME}!A3:H`;
+  const range = `${SHEET_NAME}!A3:H`; // los datos empiezan en fila 3
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
   });
 
   const rows = res.data.values || [];
-  const textoUsuario = normalizarTexto(mensajeUsuario);
 
-  // 🧪 Log para verificar que sí carga filas
   console.log('🧪 Filas cargadas de Productos:', rows.length);
   console.log('🧪 Primeras filas:', rows.slice(0, 2));
 
-  // Solo continuar si el usuario escribió "parabrisas"
-  if (!textoUsuario.includes('parabrisas')) {
-    console.log('⚠️ El mensaje no contiene la palabra "parabrisas".');
+  // 🧠 Solo considerar la primera línea del mensaje
+  const primeraLinea = mensajeUsuario.split('\n')[0] || '';
+  const primeraLineaNormalizada = normalizarTexto(primeraLinea);
+
+  if (primeraLineaNormalizada !== 'parabrisas') {
+    console.log('⚠️ La primera línea no es exactamente "parabrisas":', primeraLineaNormalizada);
     return null;
   }
 
@@ -53,7 +53,7 @@ async function buscarProducto(mensajeUsuario = '') {
     const nombreNormalizado = normalizarTexto(nombre);
     const precio = parseFloat(precioStr.toString().replace('$', '').replace(',', '')) || 0;
 
-    console.log('🔎 Comparando:', nombreNormalizado);
+    console.log('🔎 Comparando producto en hoja:', nombreNormalizado);
 
     if (nombreNormalizado === 'parabrisas') {
       console.log('✅ Producto encontrado:', nombre);
@@ -68,7 +68,7 @@ async function buscarProducto(mensajeUsuario = '') {
     }
   }
 
-  console.log('❌ No se encontró el producto "Parabrisas" exactamente.');
+  console.log('❌ No se encontró el producto con nombre exactamente "Parabrisas".');
   return null;
 }
 
