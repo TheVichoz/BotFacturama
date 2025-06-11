@@ -166,10 +166,10 @@ app.post('/webhook', async (req, res) => {
       precioBase: producto.precioBase,
       descuento: cliente.descuento,
       precioFinal,
+      descripcion: producto.descripcion,
       ProductCode: producto.productCode,
       UnitCode: producto.unitCode,
       Unit: producto.unit,
-      descripcion: producto.descripcion,
       comentarios: `Objeto: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
     };
 
@@ -182,7 +182,6 @@ app.post('/webhook', async (req, res) => {
       `🔹 Forma de pago: ${cliente.formaPago}\n` +
       `🔹 CP: ${cliente.cp}\n` +
       `🔹 CFDI: ${cliente.cfdi}\n` +
-      `🔹 Producto: ${producto.descripcion}\n` +
       `🔹 Precio base: $${producto.precioBase}\n` +
       `🔹 Descuento: ${cliente.descuento}%\n` +
       `🔹 Total con descuento: $${precioFinal}\n` +
