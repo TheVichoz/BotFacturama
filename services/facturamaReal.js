@@ -14,12 +14,12 @@ async function generarFacturaReal(datosCliente) {
   const iva = +(precioFinal * 0.16).toFixed(2);
   const totalConIva = +(precioFinal + iva).toFixed(2);
 
-  // === Datos de producto (por defecto si no se proporciona) ===
-  const producto = datosCliente.producto || {
-    ProductCode: '10111302',
-    UnitCode: 'H87',
-    Unit: 'Pieza',
-    Description: 'Producto genérico'
+  // === Datos de producto con respaldo
+  const producto = {
+    ProductCode: datosCliente.ProductCode || '10111302',
+    UnitCode: datosCliente.UnitCode || 'H87',
+    Unit: datosCliente.Unit || 'Pieza',
+    Description: datosCliente.descripcion || 'Producto genérico'
   };
 
   // === Construcción de factura ===
