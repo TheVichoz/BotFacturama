@@ -6,7 +6,8 @@ const SHEET_NAME = 'Productos';
 function normalizarTexto(texto = '') {
   return texto
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, '') // quita acentos
+    .replace(/[^\w\s]/gi, '')        // quita puntuación
     .trim()
     .toLowerCase();
 }
@@ -22,25 +23,29 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  const range = `${SHEET_NAME}!A2:H`;
+  const range = `${SHEET_NAME}!A2:H`; // incluye: Código, Nombre, Descripción, ..., Unidad, SAT, Precio
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
   });
 
   const rows = res.data.values;
-  const mensaje = normalizarTexto(mensajeUsuario);
+  const palabrasClave = normalizarTexto(mensajeUsuario).split(/\s+/);
 
   for (const row of rows) {
-    const nombre = row[1] || ''; // Columna B = Nombre
-    const descripcion = row[2] || ''; // Columna C
-    const unidad = row[5] || ''; // Columna F
-    const claveSAT = row[6] || ''; // Columna G
-    const precio = parseFloat(row[7]) || 0;
+    const nombre = row[1] || '';         // Columna B: Nombre
+    const descripcion = row[2] || '';    // Columna C: Descripción
+    const unidad = row[5] || '';         // Columna F: Unidad de medida
+    const claveSAT = row[6] || '';       // Columna G: Clave producto/servicio SAT
+    const precio = parseFloat(row[7]) || 0; // Columna H: Precio
 
     const nombreNormalizado = normalizarTexto(nombre);
 
-    if (mensaje.includes(nombreNormalizado)) {
+    const todasLasPalabrasEstan = palabrasClave.every(palabra =>
+      nombreNormalizado.includes(palabra)
+    );
+
+    if (todasLasPalabrasEstan) {
       return {
         Description: descripcion || nombre,
         ProductCode: claveSAT.replace(/\[|\]/g, ''),
