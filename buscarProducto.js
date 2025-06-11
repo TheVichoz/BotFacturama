@@ -66,7 +66,7 @@ async function buscarProducto(mensajeUsuario = '') {
 
       return {
         descripcion: descripcion || nombre,
-        productCode: claveSAT.replace(/\[|\]/g, ''),
+        productCode: claveSAT.match(/\[(.*?)\]/)?.[1] || '25172300',
         unitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
         unit: unidad.split(']').pop()?.trim() || 'Pieza',
         precioBase: precio

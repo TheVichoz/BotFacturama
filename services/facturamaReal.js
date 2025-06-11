@@ -16,9 +16,9 @@ async function generarFacturaReal(datosCliente) {
 
   // === Datos de producto con respaldo
   const producto = {
-    ProductCode: datosCliente.ProductCode || '10111302',
-    UnitCode: datosCliente.UnitCode || 'H87',
-    Unit: datosCliente.Unit || 'Pieza',
+    ProductCode: datosCliente.productCode || '10111302',
+    UnitCode: datosCliente.unitCode || 'H87',
+    Unit: datosCliente.unit || 'Pieza',
     Description: datosCliente.descripcion || 'Producto genérico'
   };
 
