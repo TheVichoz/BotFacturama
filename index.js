@@ -147,7 +147,7 @@ app.post('/webhook', async (req, res) => {
   if (message.toLowerCase().includes("factura a")) {
     const datos = analizarMensaje(message);
     const cliente = await buscarCliente(datos.cliente || '');
-    const producto = await buscarProducto(message); // ← 👈 SE CORRIGIÓ AQUÍ: se pasa el mensaje
+    const producto = await buscarProducto(message); // 👈 pasamos el mensaje
 
     if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
     if (!producto) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
@@ -166,7 +166,7 @@ app.post('/webhook', async (req, res) => {
       precioBase: producto.precioBase,
       descuento: cliente.descuento,
       precioFinal,
-      descripcion: producto.descripcion,
+      descripcion: producto.Description,
       comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
     };
 
@@ -179,7 +179,7 @@ app.post('/webhook', async (req, res) => {
       `🔹 Forma de pago: ${cliente.formaPago}\n` +
       `🔹 CP: ${cliente.cp}\n` +
       `🔹 CFDI: ${cliente.cfdi}\n` +
-      `🔹 Producto: ${producto.descripcion}\n` +
+      `🔹 Producto: ${producto.Description}\n` +
       `🔹 Precio base: $${producto.precioBase}\n` +
       `🔹 Descuento: ${cliente.descuento}%\n` +
       `🔹 Total con descuento: $${precioFinal}\n` +
