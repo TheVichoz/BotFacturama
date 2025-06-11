@@ -6,8 +6,8 @@ const SHEET_NAME = 'Productos';
 function normalizarTexto(texto = '') {
   return texto
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, '') // sin acentos
-    .replace(/[^\w\s]/gi, '')        // sin signos
+    .replace(/[\u0300-\u036f]/g, '') // Elimina acentos
+    .replace(/[^\w\s]/gi, '')        // Elimina signos de puntuación
     .trim()
     .toLowerCase();
 }
@@ -23,7 +23,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  const range = `${SHEET_NAME}!A2:H`; // incluye todas las columnas relevantes
+  const range = `${SHEET_NAME}!A2:H`; // Incluye columnas A–H
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -37,7 +37,7 @@ async function buscarProducto(mensajeUsuario = '') {
     const descripcion = row[2] || '';    // Columna C: Descripción
     const unidad = row[5] || '';         // Columna F: Unidad de medida
     const claveSAT = row[6] || '';       // Columna G: Clave SAT
-    const precio = parseFloat(row[7]) || 0; // Columna H: Precio
+    const precio = parseFloat(row[7]?.replace('$', '').replace(',', '')) || 0; // Columna H: Precio
 
     const nombreNormalizado = normalizarTexto(nombre);
 
@@ -51,12 +51,12 @@ async function buscarProducto(mensajeUsuario = '') {
         ProductCode: claveSAT.replace(/\[|\]/g, ''),
         UnitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
         Unit: unidad.split(']').pop()?.trim() || 'Pieza',
-        Precio: precio
+        precioBase: precio
       };
     }
   }
 
-  return null; // Si no encuentra
+  return null;
 }
 
 module.exports = { buscarProducto };
