@@ -42,42 +42,35 @@ app.post('/webhook', async (req, res) => {
   if (message.toLowerCase().startsWith('complemento')) {
     const partes = message.split(' ');
     const rfc = partes[1]?.trim();
-
-    if (!rfc) return responder('⚠️ Escribe *complemento* seguido del RFC. Ejemplo:\ncomplemento ROHA651106MI4');
+    if (!rfc) return responder('⚠️ Escribe *complemento* seguido del RFC.');
 
     const facturas = await buscarFacturasPorRFC(rfc);
-    if (!facturas?.length) return responder('❌ No se encontró ninguna factura emitida a ese RFC.');
+    if (!facturas?.length) return responder('❌ No se encontró ninguna factura emitida.');
 
     global.ESTADO_COMPLEMENTO[from] = { rfc, facturas };
-
     const lista = facturas.map((f, i) => `*${i + 1}*. Folio: ${f.folio} - $${f.total} - ${f.metodo}`).join('\n');
-    return responder(`📑 Se encontraron las siguientes facturas:\n\n${lista}\n\nEscribe el número de la factura que deseas usar.`);
+    return responder(`📑 Facturas disponibles:\n\n${lista}\n\nResponde con el número.`);
   }
 
   if (global.ESTADO_COMPLEMENTO[from] && !global.ESTADO_COMPLEMENTO[from].facturaSeleccionada) {
     const seleccion = parseInt(message);
     const estado = global.ESTADO_COMPLEMENTO[from];
-
     if (isNaN(seleccion) || seleccion < 1 || seleccion > estado.facturas.length) {
-      return responder('⚠️ Por favor, elige un número válido de la lista anterior.');
+      return responder('⚠️ Número inválido.');
     }
-
     estado.facturaSeleccionada = estado.facturas[seleccion - 1];
-    return responder('📅 Ahora dime la fecha y forma de pago separadas por espacio. Ejemplo:\n2025-06-01 03');
+    return responder('📅 Ahora dime la fecha y forma de pago. Ejemplo:\n2025-06-01 03');
   }
 
   if (global.ESTADO_COMPLEMENTO[from]?.facturaSeleccionada) {
     const estado = global.ESTADO_COMPLEMENTO[from];
     const [fecha, formaPago] = message.split(' ');
-
-    if (!fecha || !formaPago) {
-      return responder('⚠️ Formato incorrecto. Ejemplo:\n2025-06-01 03');
-    }
+    if (!fecha || !formaPago) return responder('⚠️ Formato incorrecto.');
 
     const cliente = await buscarCliente(estado.rfc);
     if (!cliente?.correo) {
       delete global.ESTADO_COMPLEMENTO[from];
-      return responder('⚠️ No se encontró el correo del cliente en la hoja.');
+      return responder('⚠️ No se encontró el correo del cliente.');
     }
 
     const datosPago = {
@@ -98,9 +91,7 @@ app.post('/webhook', async (req, res) => {
     const complemento = await generarComplementoPago(datosPago, cliente);
     delete global.ESTADO_COMPLEMENTO[from];
 
-    if (!complemento?.Id) {
-      return responder('❌ Error al generar el complemento de pago.');
-    }
+    if (!complemento?.Id) return responder('❌ Error al generar el complemento.');
 
     await enviarCorreo(cliente.correo, {
       ...datosPago,
@@ -110,7 +101,7 @@ app.post('/webhook', async (req, res) => {
       correo: cliente.correo
     });
 
-    return responder(`✅ Complemento generado para *${datosPago.rfc}*.\n📧 Enviado a *${cliente.correo}*.`);
+    return responder(`✅ Complemento generado para *${datosPago.rfc}* y enviado a *${cliente.correo}*.`);
   }
 
   // === FACTURACIÓN ===
@@ -118,11 +109,9 @@ app.post('/webhook', async (req, res) => {
   if (afirmacion === 'si' && global.ULTIMO_INTENTO) {
     const datos = global.ULTIMO_INTENTO;
     responder('📧 Procesando tu factura...');
-
     (async () => {
       try {
         const factura = await generarFacturaReal({ ...datos });
-
         await enviarCorreo(datos.correo, {
           ...datos,
           tipo: 'factura',
@@ -130,24 +119,22 @@ app.post('/webhook', async (req, res) => {
           id: factura.Id || factura.id || '',
           factura
         });
-
         global.ULTIMO_INTENTO = null;
       } catch (error) {
         console.error('❌ Error al generar factura:', JSON.stringify(error?.response?.data || error.message, null, 2));
       }
     })();
-
     return;
   }
 
   if (message.toLowerCase() === 'facturar') {
-    return responder(`📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\nEjemplo:\n*URVAN BLANCA\nP/GRX425F\nS/K9033313\nO/7134581\nFACTURA A NISSAN CENTRO MAX*`);
+    return responder(`📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\nEjemplo:\n*PARABRISAS\nP/GRX425F\nS/K9033313\nO/7134581\nFACTURA A NOMBRE*`);
   }
 
   if (message.toLowerCase().includes("factura a")) {
     const datos = analizarMensaje(message);
     const cliente = await buscarCliente(datos.cliente || '');
-    const producto = await buscarProducto(message); // 👈 pasamos el mensaje
+    const producto = await buscarProducto(message); // 👈 mensaje sí se pasa
 
     if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
     if (!producto) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
@@ -166,7 +153,7 @@ app.post('/webhook', async (req, res) => {
       precioBase: producto.precioBase,
       descuento: cliente.descuento,
       precioFinal,
-      descripcion: producto.Description,
+      descripcion: producto.descripcion, // 👈 en minúsculas
       comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
     };
 
@@ -179,7 +166,7 @@ app.post('/webhook', async (req, res) => {
       `🔹 Forma de pago: ${cliente.formaPago}\n` +
       `🔹 CP: ${cliente.cp}\n` +
       `🔹 CFDI: ${cliente.cfdi}\n` +
-      `🔹 Producto: ${producto.Description}\n` +
+      `🔹 Producto: ${producto.descripcion}\n` +
       `🔹 Precio base: $${producto.precioBase}\n` +
       `🔹 Descuento: ${cliente.descuento}%\n` +
       `🔹 Total con descuento: $${precioFinal}\n` +

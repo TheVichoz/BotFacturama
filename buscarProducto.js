@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
-const SHEET_NAME = 'Productos'; // Asegúrate que la hoja se llama así
+const SHEET_NAME = 'Productos';
 
 function normalizarTexto(texto = '') {
   return texto
@@ -23,7 +23,7 @@ async function buscarProducto(mensajeUsuario = '') {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  const range = `${SHEET_NAME}!A3:H`; // ← Los datos empiezan en la fila 3
+  const range = `${SHEET_NAME}!A3:H`; // Los datos empiezan en la fila 3
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -34,7 +34,6 @@ async function buscarProducto(mensajeUsuario = '') {
   console.log('🧪 Filas cargadas de Productos:', rows.length);
   console.log('🧪 Primeras filas:', rows.slice(0, 2));
 
-  // ✅ Buscar la primera línea real con contenido
   const primeraLinea = mensajeUsuario
     .split('\n')
     .map(l => l.trim())
@@ -66,10 +65,10 @@ async function buscarProducto(mensajeUsuario = '') {
       console.log('✅ Producto encontrado:', nombre);
 
       return {
-        Description: descripcion || nombre,
-        ProductCode: claveSAT.replace(/\[|\]/g, ''),
-        UnitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
-        Unit: unidad.split(']').pop()?.trim() || 'Pieza',
+        descripcion: descripcion || nombre,
+        productCode: claveSAT.replace(/\[|\]/g, ''),
+        unitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
+        unit: unidad.split(']').pop()?.trim() || 'Pieza',
         precioBase: precio
       };
     }
