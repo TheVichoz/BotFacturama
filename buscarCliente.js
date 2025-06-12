@@ -80,7 +80,7 @@ async function buscarCliente(nombreComercialBuscado) {
     const formaPagoTexto = row[5]?.trim();     // Columna F
     const metodoPago = row[6]?.trim();         // Columna G
     const usoCfdiTexto = row[7]?.trim();       // Columna H
-    const correos = (row[8] || '').toString().trim(); // Columna I
+    const correos = (row[9] || '').toString().trim(); // ✅ Columna J = índice 9
     const cp = row[17]?.trim();                // Columna R
     const descuentoStr = row[descuentoIndex] || '0';
     const descuento = parseFloat(descuentoStr) || 0;
@@ -92,6 +92,8 @@ async function buscarCliente(nombreComercialBuscado) {
       .split(',')
       .map(c => c.trim())
       .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c));
+
+    console.log('📨 Correos detectados:', correosValidos);
 
     if (buscado === nombreComercialActual && correosValidos.length > 0) {
       const codigoPostal = (cp && cp.length === 5) ? cp : '00000';
