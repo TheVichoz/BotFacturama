@@ -38,7 +38,7 @@ const formaPagoMap = {
   "por definir": "99"
 };
 
-async function buscarCliente(nombreOBuscado) {
+async function buscarCliente(nombreComercialBuscado) {
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 
   const auth = new google.auth.GoogleAuth({
@@ -54,6 +54,7 @@ async function buscarCliente(nombreOBuscado) {
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_NAME}!A1:Z1`,
   });
+
   const headers = headerRes.data.values[0];
   const descuentoIndex = headers.findIndex(h =>
     normalizarTexto(h).includes("descuento")
@@ -69,27 +70,27 @@ async function buscarCliente(nombreOBuscado) {
   const rows = res.data.values;
 
   for (const row of rows) {
-    const nombre = row[0]?.trim();
-    const rfc = row[1]?.trim();
-    const regimenTexto = row[2]?.trim();
-    const formaPagoTexto = row[4]?.trim();
-    const metodoPago = row[5]?.trim();
-    const usoCfdiTexto = row[6]?.trim();
-    const correos = (row[8] || '').toString().trim();
-    const cp = row[17]?.trim();
+    const nombreComercial = row[0]?.trim();    // Columna A
+    const razonSocial = row[1]?.trim();        // Columna B
+    const rfc = row[2]?.trim();                // Columna C
+    const regimenTexto = row[3]?.trim();       // Columna D
+    const formaPagoTexto = row[5]?.trim();     // Columna F
+    const metodoPago = row[6]?.trim();         // Columna G
+    const usoCfdiTexto = row[7]?.trim();       // Columna H
+    const correos = (row[8] || '').toString().trim(); // Columna I
+    const cp = row[17]?.trim();                // Columna R
     const descuentoStr = row[descuentoIndex] || '0';
     const descuento = parseFloat(descuentoStr) || 0;
 
-    const buscado = nombreOBuscado?.trim().toUpperCase();
-    const nombreActual = nombre?.toUpperCase();
-    const rfcActual = rfc?.toUpperCase();
+    const buscado = nombreComercialBuscado?.trim().toUpperCase();
+    const nombreComercialActual = nombreComercial?.toUpperCase();
 
     const correosValidos = correos
       .split(',')
       .map(c => c.trim())
       .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c));
 
-    if ((buscado === nombreActual || buscado === rfcActual) && correosValidos.length > 0) {
+    if (buscado === nombreComercialActual && correosValidos.length > 0) {
       const codigoPostal = (cp && cp.length === 5) ? cp : '00000';
 
       const regimenFinal = rfc.length === 13
@@ -99,10 +100,10 @@ async function buscarCliente(nombreOBuscado) {
       const formaPago = formaPagoMap[normalizarTexto(formaPagoTexto)] || '99';
       const cfdi = usoCFDIMap[normalizarTexto(usoCfdiTexto)] || 'G03';
 
-      console.log("📋 Cliente encontrado en hoja:");
+      console.log("📋 Cliente encontrado (por nombre comercial):");
       console.log({
         rfc,
-        razon: nombre,
+        razon: razonSocial,
         cp: codigoPostal,
         cfdi,
         correo: correosValidos.join(','),
@@ -114,7 +115,7 @@ async function buscarCliente(nombreOBuscado) {
 
       return {
         rfc,
-        razon: nombre,
+        razon: razonSocial,
         cp: codigoPostal,
         cfdi,
         correo: correosValidos.join(','),
