@@ -43,7 +43,7 @@ async function generarFacturaReal(datosCliente) {
         ProductCode: producto.ProductCode,
         UnitCode: producto.UnitCode,
         Unit: producto.Unit,
-        Description: `${producto.Description} con ${descuento}% de descuento aplicado`,
+        Description: producto.Description, // ✅ sin texto de descuento
         UnitPrice: precioFinal,
         Subtotal: precioFinal,
         TaxObject: '02',
