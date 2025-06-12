@@ -49,18 +49,17 @@ async function buscarCliente(nombreComercialBuscado) {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
 
-  // Leer encabezados para encontrar la columna "Descuento"
+  // Leer encabezado
   const headerRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_NAME}!A1:Z1`,
   });
 
   const headers = headerRes.data.values[0];
-  const descuentoIndex = headers.findIndex(h =>
-    normalizarTexto(h).includes("descuento")
-  );
+  const descuentoIndex = 19; // Columna T
+  const cpIndex = 18;        // Columna S
 
-  // Leer todas las filas de datos
+  // Leer todas las filas
   const range = `${SHEET_NAME}!A2:Z`;
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -68,20 +67,19 @@ async function buscarCliente(nombreComercialBuscado) {
   });
 
   const rows = res.data.values;
-
   const buscado = nombreComercialBuscado?.trim().toUpperCase();
   console.log('🔍 Buscando nombre comercial:', buscado);
 
   for (const row of rows) {
-    const nombreComercial = row[0]?.trim();    // Columna A
-    const razonSocial = row[1]?.trim();        // Columna B
-    const rfc = row[2]?.trim();                // Columna C
-    const regimenTexto = row[3]?.trim();       // Columna D
-    const formaPagoTexto = row[5]?.trim();     // Columna F
-    const metodoPago = row[6]?.trim();         // Columna G
-    const usoCfdiTexto = row[7]?.trim();       // Columna H
-    const correos = (row[9] || '').toString().trim(); // ✅ Columna J = índice 9
-    const cp = row[17]?.trim();                // Columna R
+    const nombreComercial = row[0]?.trim();     // A
+    const razonSocial = row[1]?.trim();         // B
+    const rfc = row[2]?.trim();                 // C
+    const regimenTexto = row[3]?.trim();        // D
+    const formaPagoTexto = row[5]?.trim();      // F
+    const metodoPago = row[6]?.trim();          // G
+    const usoCfdiTexto = row[7]?.trim();        // H
+    const correos = (row[9] || '').toString().trim(); // J
+    const cp = row[cpIndex]?.trim();            // S
     const descuentoStr = row[descuentoIndex] || '0';
     const descuento = parseFloat(descuentoStr) || 0;
 
@@ -92,8 +90,6 @@ async function buscarCliente(nombreComercialBuscado) {
       .split(',')
       .map(c => c.trim())
       .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c));
-
-    console.log('📨 Correos detectados:', correosValidos);
 
     if (buscado === nombreComercialActual && correosValidos.length > 0) {
       const codigoPostal = (cp && cp.length === 5) ? cp : '00000';
