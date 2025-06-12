@@ -172,7 +172,7 @@ app.post('/webhook', async (req, res) => {
       ProductCode: producto.productCode,
       UnitCode: producto.unitCode,
       Unit: producto.unit,
-      comentarios: `Objeto: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
+      comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
     };
 
     return responder(
