@@ -168,7 +168,7 @@ app.post('/webhook', async (req, res) => {
       precioBase: producto.precioBase,
       descuento: cliente.descuento,
       precioFinal,
-      descripcion: producto.descripcion,
+      descripcion: datos.objeto,
       ProductCode: producto.productCode,
       UnitCode: producto.unitCode,
       Unit: producto.unit,
