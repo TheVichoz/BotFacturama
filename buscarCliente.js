@@ -69,6 +69,9 @@ async function buscarCliente(nombreComercialBuscado) {
 
   const rows = res.data.values;
 
+  const buscado = nombreComercialBuscado?.trim().toUpperCase();
+  console.log('🔍 Buscando nombre comercial:', buscado);
+
   for (const row of rows) {
     const nombreComercial = row[0]?.trim();    // Columna A
     const razonSocial = row[1]?.trim();        // Columna B
@@ -82,8 +85,8 @@ async function buscarCliente(nombreComercialBuscado) {
     const descuentoStr = row[descuentoIndex] || '0';
     const descuento = parseFloat(descuentoStr) || 0;
 
-    const buscado = nombreComercialBuscado?.trim().toUpperCase();
     const nombreComercialActual = nombreComercial?.toUpperCase();
+    console.log(`🔎 Comparando: "${buscado}" con "${nombreComercialActual}"`);
 
     const correosValidos = correos
       .split(',')
@@ -127,6 +130,7 @@ async function buscarCliente(nombreComercialBuscado) {
     }
   }
 
+  console.log('❌ Cliente no encontrado o sin correo válido.');
   return null;
 }
 
