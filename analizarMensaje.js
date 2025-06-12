@@ -5,7 +5,7 @@ if (!global.ESTADO_COMPLEMENTO) global.ESTADO_COMPLEMENTO = {};
 const estadosComplemento = global.ESTADO_COMPLEMENTO;
 
 /**
- * 🧾 Análisis de mensaje con datos para facturar (modo tradicional)
+ * 🧾 Análisis de mensaje con datos para facturar
  */
 function analizarMensaje(texto) {
   const lineas = texto
@@ -14,9 +14,8 @@ function analizarMensaje(texto) {
     .filter(l => l !== '');
 
   let datos = {
-    consecutivo: null,
-    servicio: null,
-    vehiculo: null,
+    objeto: lineas[0] || '',
+    vehiculo: lineas[1] || '',
     placa: null,
     serie: null,
     orden: null,
@@ -24,15 +23,11 @@ function analizarMensaje(texto) {
   };
 
   for (let linea of lineas) {
-    if (/^\d+$/.test(linea)) datos.consecutivo = linea;
-    else if (linea.startsWith('D/')) datos.servicio = linea;
-    else if (linea.startsWith('P/')) datos.placa = linea.replace('P/', '');
-    else if (linea.startsWith('S/')) datos.serie = linea.replace('S/', '');
-    else if (linea.startsWith('O/')) datos.orden = linea.replace('O/', '');
+    if (linea.startsWith('P/')) datos.placa = linea.replace('P/', '').trim();
+    else if (linea.startsWith('S/')) datos.serie = linea.replace('S/', '').trim();
+    else if (linea.startsWith('O/')) datos.orden = linea.replace('O/', '').trim();
     else if (linea.toUpperCase().startsWith('FACTURA A')) {
       datos.cliente = linea.replace(/FACTURA A/i, '').trim();
-    } else if (!datos.vehiculo) {
-      datos.vehiculo = linea;
     }
   }
 
