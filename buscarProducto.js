@@ -3,15 +3,6 @@ const { google } = require('googleapis');
 const SPREADSHEET_ID = '1UyuY7Gl7yI5yXCr1yVCifkLvMgIOlg-tB9gVZb1_D0g';
 const SHEET_NAME = 'Productos';
 
-function normalizarTexto(texto = '') {
-  return texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, '') // Elimina acentos
-    .replace(/[^\w\s]/gi, '')        // Elimina signos
-    .trim()
-    .toLowerCase();
-}
-
 async function buscarProducto(mensajeUsuario = '') {
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 
@@ -39,15 +30,7 @@ async function buscarProducto(mensajeUsuario = '') {
     .map(l => l.trim())
     .find(l => l.length > 0) || '';
 
-  const primeraLineaNormalizada = normalizarTexto(primeraLinea);
-
-  console.log('📩 Primera línea cruda:', JSON.stringify(primeraLinea));
-  console.log('📩 Primera línea normalizada:', primeraLineaNormalizada);
-
-  if (primeraLineaNormalizada !== 'parabrisas') {
-    console.log('⚠️ La primera línea no es exactamente "parabrisas"');
-    return null;
-  }
+  console.log('📩 Primera línea escrita por el usuario:', JSON.stringify(primeraLinea));
 
   for (const row of rows) {
     const nombre = row[1] || '';        // Columna B: Nombre
@@ -56,13 +39,10 @@ async function buscarProducto(mensajeUsuario = '') {
     const claveSAT = row[6] || '';      // Columna G
     const precioStr = row[7] || '';     // Columna H
 
-    const nombreNormalizado = normalizarTexto(nombre);
-    const precio = parseFloat(precioStr.toString().replace('$', '').replace(',', '')) || 0;
+    if (primeraLinea === nombre) {
+      const precio = parseFloat(precioStr.toString().replace('$', '').replace(',', '')) || 0;
 
-    console.log('🔎 Comparando producto en hoja:', nombreNormalizado);
-
-    if (nombreNormalizado === 'parabrisas') {
-      console.log('✅ Producto encontrado:', nombre);
+      console.log('✅ Producto válido encontrado:', nombre);
 
       return {
         descripcion: descripcion || nombre,
@@ -74,7 +54,7 @@ async function buscarProducto(mensajeUsuario = '') {
     }
   }
 
-  console.log('❌ No se encontró el producto con nombre exactamente "Parabrisas".');
+  console.log('❌ Producto NO válido. No coincide con la lista exacta.');
   return null;
 }
 
