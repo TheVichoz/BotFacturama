@@ -114,10 +114,10 @@ app.post('/webhook', async (req, res) => {
   }
 
   // === FACTURACIÓN ===
-  const afirmacion = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
-  if (afirmacion === 'si' && global.ULTIMO_INTENTO) {
+  const afirmacion = message.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+
+  if (afirmacion.startsWith('si') && global.ULTIMO_INTENTO) {
     const datos = global.ULTIMO_INTENTO;
-    responder('📧 Procesando tu factura...');
 
     (async () => {
       try {
@@ -132,8 +132,10 @@ app.post('/webhook', async (req, res) => {
         });
 
         global.ULTIMO_INTENTO = null;
+        responder('✅ ¡Factura generada con éxito!');
       } catch (error) {
         console.error('❌ Error al generar factura:', JSON.stringify(error?.response?.data || error.message, null, 2));
+        responder('❌ Ocurrió un error al generar la factura.');
       }
     })();
 
