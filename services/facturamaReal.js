@@ -22,6 +22,15 @@ async function generarFacturaReal(datosCliente) {
     Description: datosCliente.descripcion || 'Producto genérico'
   };
 
+  // === Asignar serie automática según cliente
+  let serie = null;
+  const razon = (datosCliente.razon || '').toUpperCase();
+
+  if (razon.includes('ACURA')) serie = 'HONDA';
+  else if (razon.includes('MARAVILLAS')) serie = 'MARAVILLAS';
+  else if (razon.includes('MAZDA SERVICIO')) serie = 'MSERV';
+  else if (razon.includes('TOYOTA SERVICIO')) serie = 'SERVICIO';
+
   // === Construcción de factura ===
   const factura = {
     Receiver: {
@@ -37,6 +46,8 @@ async function generarFacturaReal(datosCliente) {
     PaymentForm: datosCliente.formaPago || '01',
     PaymentMethod: datosCliente.metodoPago || 'PUE',
     Exportation: '01',
+    Serie: serie,
+    Folio: null,
     Items: [
       {
         Quantity: 1,
