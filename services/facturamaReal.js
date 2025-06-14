@@ -22,6 +22,9 @@ async function generarFacturaReal(datosCliente) {
     Description: datosCliente.descripcion || 'Producto genérico'
   };
 
+  // === Fallback: convertir serie "GLOBAL" en "A" para Facturama
+  const serieFinal = (datosCliente.Serie?.toUpperCase() === 'GLOBAL') ? 'A' : datosCliente.Serie;
+
   // === Construcción de factura ===
   const factura = {
     Receiver: {
@@ -37,7 +40,7 @@ async function generarFacturaReal(datosCliente) {
     PaymentForm: datosCliente.formaPago || '01',
     PaymentMethod: datosCliente.metodoPago || 'PUE',
     Exportation: '01',
-    Serie: datosCliente.Serie || null,
+    Serie: serieFinal || null,
     Folio: datosCliente.Folio || null,
     Items: [
       {
