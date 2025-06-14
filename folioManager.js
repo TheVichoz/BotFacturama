@@ -1,6 +1,6 @@
 const { google } = require('googleapis');
 
-const SPREADSHEET_ID = 'TU_ID_AQUI';
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 const SHEET_NAME = 'Folios';
 
 async function obtenerYActualizarFolio(serieSolicitada = 'GLOBAL') {
@@ -13,6 +13,9 @@ async function obtenerYActualizarFolio(serieSolicitada = 'GLOBAL') {
 
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
+
+  console.log('📋 Usando SPREADSHEET_ID:', SPREADSHEET_ID);
+  console.log('🔍 Buscando serie:', serieSolicitada);
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -31,7 +34,10 @@ async function obtenerYActualizarFolio(serieSolicitada = 'GLOBAL') {
     }
   }
 
-  if (rowIndex === -1) throw new Error(`Serie "${serieSolicitada}" no encontrada en Google Sheets.`);
+  if (rowIndex === -1) {
+    console.log('❌ Series disponibles:', rows.map(r => r[0]));
+    throw new Error(`Serie "${serieSolicitada}" no encontrada en Google Sheets.`);
+  }
 
   const nuevoFolio = ultimoFolio + 1;
 
