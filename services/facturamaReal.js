@@ -65,8 +65,9 @@ async function generarFacturaReal(datosCliente) {
     Observations: datosCliente.comentarios || ''
   };
 
-  console.log('📤 Enviando factura en producción (API Web)');
-  console.log(JSON.stringify(factura, null, 2));
+  // === Logs de depuración ===
+  console.log('🧾 Serie y Folio que se enviarán a Facturama:', factura.Serie, factura.Folio);
+  console.log('📤 Payload completo a Facturama:\n', JSON.stringify(factura, null, 2));
 
   try {
     const response = await axios.post(url, factura, {
@@ -76,8 +77,7 @@ async function generarFacturaReal(datosCliente) {
       }
     });
 
-    console.log('📦 RESPUESTA Facturama:');
-    console.log(JSON.stringify(response.data, null, 2));
+    console.log('📦 RESPUESTA Facturama:\n', JSON.stringify(response.data, null, 2));
 
     return {
       id: response.data.Id,
@@ -91,7 +91,7 @@ async function generarFacturaReal(datosCliente) {
     };
 
   } catch (error) {
-    console.error('❌ Error al emitir factura:');
+    console.error('❌ Error al emitir factura:\n');
     if (error.response) {
       console.error(JSON.stringify(error.response.data, null, 2));
       throw new Error('Factura no generada correctamente.');
