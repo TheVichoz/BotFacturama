@@ -9,6 +9,7 @@ const { analizarMensaje } = require('./analizarMensaje');
 const { buscarCliente } = require('./buscarCliente');
 const { buscarProducto } = require('./buscarProducto');
 const { probarTokenFacturama } = require('./services/probarTokenFacturama');
+const { obtenerYActualizarFolio } = require('./folioManager');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -121,7 +122,13 @@ app.post('/webhook', async (req, res) => {
 
     (async () => {
       try {
-        const factura = await generarFacturaReal({ ...datos });
+        const folio = await obtenerYActualizarFolio(datos.serie || 'GLOBAL');
+
+        const factura = await generarFacturaReal({
+          ...datos,
+          Serie: datos.serie || 'GLOBAL',
+          Folio: folio.toString()
+        });
 
         await enviarCorreo(datos.correo, {
           ...datos,
@@ -156,6 +163,11 @@ app.post('/webhook', async (req, res) => {
 
     const precioFinal = +(producto.precioBase - (producto.precioBase * cliente.descuento / 100)).toFixed(2);
 
+    // === Extraer serie desde el mensaje ===
+    const regexSerie = /SERIE\s+([A-Z0-9]+)/i;
+    const matchSerie = message.match(regexSerie);
+    const serie = matchSerie ? matchSerie[1].toUpperCase().trim() : 'GLOBAL';
+
     global.ULTIMO_INTENTO = {
       rfc: cliente.rfc,
       razon: cliente.razon,
@@ -172,7 +184,9 @@ app.post('/webhook', async (req, res) => {
       ProductCode: producto.productCode,
       UnitCode: producto.unitCode,
       Unit: producto.unit,
-      comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`
+      comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
+      serie: serie,
+      mensajeOriginal: message
     };
 
     return responder(
@@ -187,7 +201,8 @@ app.post('/webhook', async (req, res) => {
       `🔹 Precio base: $${producto.precioBase}\n` +
       `🔹 Descuento: ${cliente.descuento}%\n` +
       `🔹 Total con descuento: $${precioFinal}\n` +
-      `🔹 Comentarios: ${global.ULTIMO_INTENTO.comentarios}\n\n` +
+      `🔹 Comentarios: ${global.ULTIMO_INTENTO.comentarios}\n` +
+      `🔹 Serie: ${serie}\n\n` +
       `Responde con *Sí* para emitir la factura.`
     );
   }
