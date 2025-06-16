@@ -22,8 +22,17 @@ async function generarFacturaReal(datosCliente) {
     Description: datosCliente.descripcion || 'Producto genérico'
   };
 
-  // === Usar la serie proporcionada tal cual
-  const serieFinal = datosCliente.Serie || null;
+  // === Mapeo de nombre de serie a código real en Facturama
+  const serieMap = {
+    'GLOBAL': 'A',
+    'HONDA': 'B',
+    'MARAVILLAS': 'C',
+    'MSERV': 'D',
+    'SERVICIO': 'E'
+  };
+
+  const serieNombre = datosCliente.Serie?.toUpperCase().trim();
+  const serieFinal = serieMap[serieNombre] || serieNombre;
 
   // === Construcción de factura ===
   const factura = {
