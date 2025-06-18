@@ -79,7 +79,7 @@ async function enviarCorreo(destinatario, datos) {
   `;
 
   await transporter.sendMail({
-    from: `"Bot Facturación" <${process.env.MAIL_USER}>`,
+    from: `"Facturación Proteq" <${process.env.MAIL_USER}>`,
     to: destinatario,
     subject: `📄 Confirmación de ${datos.tipo === 'complemento' ? 'Complemento de Pago' : 'Factura'}`,
     html,

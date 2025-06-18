@@ -168,26 +168,36 @@ app.post('/webhook', async (req, res) => {
     const matchSerie = message.match(regexSerie);
     const serie = matchSerie ? matchSerie[1].toUpperCase().trim() : 'GLOBAL';
 
-    global.ULTIMO_INTENTO = {
-      rfc: cliente.rfc,
-      razon: cliente.razon,
-      cp: cliente.cp,
-      cfdi: cliente.cfdi,
-      correo: cliente.correo,
-      regimen: cliente.regimen,
-      metodoPago: cliente.metodoPago,
-      formaPago: cliente.formaPago,
-      precioBase: producto.precioBase,
-      descuento: cliente.descuento,
-      precioFinal,
-      descripcion: datos.objeto,
-      ProductCode: producto.productCode,
-      UnitCode: producto.unitCode,
-      Unit: producto.unit,
-      comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
-      serie: serie,
-      mensajeOriginal: message
-    };
+    // Detectar si el usuario quiere forzar método de pago
+let metodoPago = cliente.metodoPago;
+if (message.toLowerCase().includes("hoy quiero que sea pue")) {
+  metodoPago = "PUE";
+}
+if (message.toLowerCase().includes("hoy quiero que sea ppd")) {
+  metodoPago = "PPD";
+}
+
+global.ULTIMO_INTENTO = {
+  rfc: cliente.rfc,
+  razon: cliente.razon,
+  cp: cliente.cp,
+  cfdi: cliente.cfdi,
+  correo: cliente.correo,
+  regimen: cliente.regimen,
+  metodoPago: metodoPago,
+  formaPago: cliente.formaPago,
+  precioBase: producto.precioBase,
+  descuento: cliente.descuento,
+  precioFinal,
+  descripcion: datos.objeto,
+  ProductCode: producto.productCode,
+  UnitCode: producto.unitCode,
+  Unit: producto.unit,
+  comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
+  serie: serie,
+  mensajeOriginal: message
+};
+
 
     return responder(
       `🧾 ¿Confirmas generar la factura con los siguientes datos?\n\n` +
