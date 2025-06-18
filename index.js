@@ -176,6 +176,7 @@ if (message.toLowerCase().includes("hoy quiero que sea pue")) {
 if (message.toLowerCase().includes("hoy quiero que sea ppd")) {
   metodoPago = "PPD";
 }
+console.log("🧪 Método de pago final:", metodoPago); // ← aquí
 
 global.ULTIMO_INTENTO = {
   rfc: cliente.rfc,
