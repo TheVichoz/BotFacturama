@@ -205,7 +205,7 @@ global.ULTIMO_INTENTO = {
       `🔹 Cliente: ${cliente.razon}\n` +
       `🔹 RFC: ${cliente.rfc}\n` +
       `🔹 Régimen: ${cliente.regimen}\n` +
-      `🔹 Método de pago: ${cliente.metodoPago}\n` +
+     `🔹 Método de pago: ${metodoPago}\n` +
       `🔹 Forma de pago: ${cliente.formaPago}\n` +
       `🔹 CP: ${cliente.cp}\n` +
       `🔹 CFDI: ${cliente.cfdi}\n` +
