@@ -38,7 +38,7 @@ const formaPagoMap = {
   "por definir": "99"
 };
 
-async function buscarCliente(nombreComercialBuscado) {
+async function buscarCliente(valorBuscado, tipo = 'nombre') {
   const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 
   const auth = new google.auth.GoogleAuth({
@@ -67,8 +67,8 @@ async function buscarCliente(nombreComercialBuscado) {
   });
 
   const rows = res.data.values;
-  const buscado = nombreComercialBuscado?.trim().toUpperCase();
-  console.log('🔍 Buscando nombre comercial:', buscado);
+  const buscado = valorBuscado?.trim().toUpperCase();
+  console.log(`🔍 Buscando por ${tipo === 'rfc' ? 'RFC' : 'nombre comercial'}:`, buscado);
 
   for (const row of rows) {
     const nombreComercial = row[0]?.trim();     // A
@@ -84,14 +84,20 @@ async function buscarCliente(nombreComercialBuscado) {
     const descuento = parseFloat(descuentoStr) || 0;
 
     const nombreComercialActual = nombreComercial?.toUpperCase();
-    console.log(`🔎 Comparando: "${buscado}" con "${nombreComercialActual}"`);
+    const rfcActual = rfc?.toUpperCase();
+
+    console.log(`🔎 Comparando contra fila: "${tipo === 'rfc' ? rfcActual : nombreComercialActual}"`);
+
+    const coincide = tipo === 'rfc'
+      ? buscado === rfcActual
+      : buscado === nombreComercialActual;
 
     const correosValidos = correos
       .split(',')
       .map(c => c.trim())
       .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c));
 
-    if (buscado === nombreComercialActual && correosValidos.length > 0) {
+    if (coincide && correosValidos.length > 0) {
       const codigoPostal = (cp && cp.length === 5) ? cp : '00000';
 
       const regimenFinal = rfc.length === 13
@@ -101,7 +107,7 @@ async function buscarCliente(nombreComercialBuscado) {
       const formaPago = formaPagoMap[normalizarTexto(formaPagoTexto)] || '99';
       const cfdi = usoCFDIMap[normalizarTexto(usoCfdiTexto)] || 'G03';
 
-      console.log("📋 Cliente encontrado (por nombre comercial):");
+      console.log("📋 Cliente encontrado:");
       console.log({
         rfc,
         razon: razonSocial,
