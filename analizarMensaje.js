@@ -1,4 +1,5 @@
 const { buscarFacturaPorRFC, generarComplementoPago } = require('./facturamaComplemento');
+const { buscarCliente } = require('./buscarCliente'); // ✅ Agregado
 
 // 🧠 Estado global de conversaciones para complemento
 if (!global.ESTADO_COMPLEMENTO) global.ESTADO_COMPLEMENTO = {};
@@ -60,6 +61,10 @@ async function analizarFlujoConversacional(mensaje, from) {
       estado.uuid = factura.uuid;
       estado.total = factura.total;
       estado.nombre = factura.receptor.Name || 'Cliente';
+      estado.subtotal = factura.subtotal;
+      estado.moneda = factura.moneda;
+      estado.folio = factura.folio;
+      estado.serie = factura.serie;
       estado.paso = 2;
 
       return `✅ Factura encontrada para *${estado.nombre}*. Total: $${estado.total}\nAhora dime el *monto pagado*.`;
@@ -83,7 +88,14 @@ async function analizarFlujoConversacional(mensaje, from) {
     if (estado.paso === 4) {
       estado.formaPago = texto;
 
-      const resultado = await generarComplementoPago(estado);
+      const receptor = await buscarCliente(estado.rfc, 'rfc'); // ✅ Buscar cliente por RFC
+
+      if (!receptor) {
+        delete estadosComplemento[from];
+        return '❌ No se encontró al cliente en la base de datos o no tiene correo válido.';
+      }
+
+      const resultado = await generarComplementoPago(estado, receptor);
       delete estadosComplemento[from];
 
       if (resultado) {
