@@ -75,7 +75,7 @@ app.post('/webhook', async (req, res) => {
       return responder('⚠️ Formato incorrecto. Ejemplo:\n2025-06-01 03');
     }
 
-    const cliente = await buscarCliente(estado.rfc);
+    const cliente = await buscarCliente(estado.rfc, 'rfc');
     if (!cliente?.correo) {
       delete global.ESTADO_COMPLEMENTO[from];
       return responder('⚠️ No se encontró el correo del cliente en la hoja.');
