@@ -29,6 +29,8 @@ const regimenFiscalMap = {
 const formaPagoMap = {
   "efectivo": "01",
   "cheque nominativo": "02",
+  "cheque": "02",
+  "Cheque": "02",
   "transferencia electronica de fondos": "03",
   "transferencia electrónica de fondos": "03",
   "tarjeta de crédito": "04",
