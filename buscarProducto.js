@@ -33,13 +33,22 @@ async function buscarProducto(mensajeUsuario = '') {
   console.log('📩 Primera línea escrita por el usuario:', JSON.stringify(primeraLinea));
 
   for (const row of rows) {
+    const codigo = row[0] || '';        // Columna A: Código completo
     const nombre = row[1] || '';        // Columna B: Nombre
     const descripcion = row[2] || '';   // Columna C: Descripción
     const unidad = row[5] || '';        // Columna F
     const claveSAT = row[6] || '';      // Columna G
     const precioStr = row[7] || '';     // Columna H
 
-    if (primeraLinea === nombre) {
+    const codigoCorto = codigo.split('-')[1]?.trim()?.toLowerCase() || ''; // Extrae "SPAR" de "78181506-SPAR"
+    const primeraLineaLower = primeraLinea.toLowerCase();
+
+    // Coincide con nombre completo o con código corto
+    if (
+      primeraLineaLower === nombre.toLowerCase() ||
+      primeraLineaLower === descripcion.toLowerCase() ||
+      primeraLineaLower === codigoCorto
+    ) {
       const precio = parseFloat(precioStr.toString().replace('$', '').replace(',', '')) || 0;
 
       console.log('✅ Producto válido encontrado:', nombre);
