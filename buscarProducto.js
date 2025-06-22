@@ -53,13 +53,14 @@ async function buscarProducto(mensajeUsuario = '') {
 
       console.log('✅ Producto válido encontrado:', nombre);
 
-      return {
-        descripcion: descripcion || nombre,
-        productCode: claveSAT.match(/\[(.*?)\]/)?.[1] || '25172300',
-        unitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
-        unit: unidad.split(']').pop()?.trim() || 'Pieza',
-        precioBase: precio
-      };
+return {
+  descripcion: nombre, // <-- usamos el nombre largo como concepto de factura
+  productCode: claveSAT.match(/\[(.*?)\]/)?.[1] || '25172300',
+  unitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
+  unit: unidad.split(']').pop()?.trim() || 'Pieza',
+  precioBase: precio
+};
+
     }
   }
 
