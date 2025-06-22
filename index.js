@@ -199,7 +199,7 @@ global.ULTIMO_INTENTO = {
   precioBase: producto.precioBase,
   descuento: cliente.descuento,
   precioFinal,
-  descripcion: datos.objeto,
+ descripcion: producto.descripcion, // ✅ usa el nombre largo del producto desde buscarProducto
   ProductCode: producto.productCode,
   UnitCode: producto.unitCode,
   Unit: producto.unit,
