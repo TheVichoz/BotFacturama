@@ -78,6 +78,7 @@ async function generarFacturaReal(datosCliente) {
   };
 
   // === Logs de depuración ===
+  console.log('🧾 Concepto que se enviará:', producto.Description);
   console.log('🧾 Serie y Folio que se enviarán a Facturama:', factura.Serie, factura.Folio);
   console.log('📤 Payload completo a Facturama:\n', JSON.stringify(factura, null, 2));
 
