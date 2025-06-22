@@ -115,9 +115,18 @@ app.post('/webhook', async (req, res) => {
   }
 
   // === FACTURACIÓN ===
-  const afirmacion = message.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
+const afirmacion = message
+  .trim()
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, ''); // elimina tildes
 
-  if (afirmacion.startsWith('si') && global.ULTIMO_INTENTO) {
+const respuestasValidas = ['si', 'sí', 'sii', 'sip', 'claro', 'va', 'ok', 'dale'];
+const contieneAfirmacion = respuestasValidas.some(resp => afirmacion.startsWith(resp));
+
+// FACTURAR si se confirma con alguna variante de afirmación
+if (contieneAfirmacion && global.ULTIMO_INTENTO) {
+
     const datos = global.ULTIMO_INTENTO;
 
     (async () => {
