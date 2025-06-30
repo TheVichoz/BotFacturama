@@ -199,14 +199,15 @@ global.ULTIMO_INTENTO = {
   precioBase: producto.precioBase,
   descuento: cliente.descuento,
   precioFinal,
- descripcion: producto.descripcion, // ✅ usa el nombre largo del producto desde buscarProducto
-  ProductCode: producto.productCode,
-  UnitCode: producto.unitCode,
-  Unit: producto.unit,
+  descripcion: producto.descripcion,
+  productCode: producto.productCode, // minúscula
+  unitCode: producto.unitCode,       // minúscula
+  unit: producto.unit,               // minúscula
   comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
   serie: serie,
   mensajeOriginal: message
 };
+
 
 
     return responder(
