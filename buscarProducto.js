@@ -40,7 +40,7 @@ async function buscarProducto(mensajeUsuario = '') {
     const claveSAT = row[6] || '';      // Columna G
     const precioStr = row[7] || '';     // Columna H
 
-    const codigoCorto = codigo.split('-')[1]?.trim()?.toLowerCase() || ''; // Extrae "SPAR" de "78181506-SPAR"
+    const codigoCorto = codigo.split('-')[1]?.trim()?.toLowerCase() || '';
     const primeraLineaLower = primeraLinea.toLowerCase();
 
     // Coincide con nombre completo o con código corto
@@ -51,13 +51,23 @@ async function buscarProducto(mensajeUsuario = '') {
     ) {
       const precio = parseFloat(precioStr.toString().replace('$', '').replace(',', '')) || 0;
 
+      // Extraer el unitCode si hay corchetes
+      const unitCodeMatch = unidad.match(/\[(.*?)\]/);
+      // Extraer el texto después del corchete si existe
+      const unitTextSplit = unidad.includes(']')
+        ? unidad.split(']').pop()?.trim()
+        : unidad.trim();
+
       console.log('✅ Producto válido encontrado:', nombre);
+      console.log('🟢 unidad:', JSON.stringify(unidad));
+      console.log('🟢 unitCode:', unitCodeMatch?.[1]);
+      console.log('🟢 unit:', unitTextSplit);
 
       return {
         descripcion: nombre, // Concepto de factura
         productCode: claveSAT || '78181506',
-        unitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
-        unit: unidad.split(']').pop()?.trim() || 'Pieza',
+        unitCode: unitCodeMatch?.[1] || 'H87',
+        unit: unitTextSplit || 'Unidad de servicio',
         precioBase: precio
       };
     }
