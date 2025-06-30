@@ -22,11 +22,16 @@ async function generarFacturaReal(datosCliente) {
     'MSERV': 'D',
     'SERVICIO': 'E'
   };
-
   const serieNombre = datosCliente.Serie?.toUpperCase().trim();
   const serieFinal = serieMap[serieNombre] || serieNombre;
 
-  // === Construcción de factura ===
+  // === Si es unidad de servicio, ProductCode = 78181506
+  let productCodeFinal = datosCliente.productCode || '10111302';
+  if ((datosCliente.unitCode || '').toUpperCase() === 'E48') {
+    productCodeFinal = '78181506';
+  }
+
+  // === Construcción de factura
   const factura = {
     Receiver: {
       Name: datosCliente.razon,
@@ -46,7 +51,7 @@ async function generarFacturaReal(datosCliente) {
     Items: [
       {
         Quantity: 1,
-        ProductCode: datosCliente.productCode || '10111302',
+        ProductCode: productCodeFinal,
         UnitCode: datosCliente.unitCode || 'H87',
         Unit: datosCliente.unit || 'Pieza',
         Description: datosCliente.descripcion || 'Producto genérico',
@@ -71,6 +76,7 @@ async function generarFacturaReal(datosCliente) {
 
   // === Logs de depuración ===
   console.log('🧾 Concepto que se enviará:', factura.Items[0].Description);
+  console.log('🧾 ProductCode que se enviará:', factura.Items[0].ProductCode);
   console.log('🧾 UnitCode que se enviará:', factura.Items[0].UnitCode);
   console.log('🧾 Unit que se enviará:', factura.Items[0].Unit);
   console.log('🧾 Serie y Folio que se enviarán a Facturama:', factura.Serie, factura.Folio);
