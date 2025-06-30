@@ -36,7 +36,7 @@ async function buscarProducto(mensajeUsuario = '') {
     const codigo = row[0] || '';        // Columna A: Código completo
     const nombre = row[1] || '';        // Columna B: Nombre
     const descripcion = row[2] || '';   // Columna C: Descripción
-    const unidad = row[5] || '';        // Columna F
+    const unidad = row[5] || '';        // Columna F (por ejemplo: "[E48] Unidad de servicio")
     const claveSAT = row[6] || '';      // Columna G
     const precioStr = row[7] || '';     // Columna H
 
@@ -53,14 +53,13 @@ async function buscarProducto(mensajeUsuario = '') {
 
       console.log('✅ Producto válido encontrado:', nombre);
 
-return {
-  descripcion: nombre, // <-- usamos el nombre largo como concepto de factura
-  productCode: claveSAT.match(/\[(.*?)\]/)?.[1] || '25172300',
-  unitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
-  unit: unidad.split(']').pop()?.trim() || 'Pieza',
-  precioBase: precio
-};
-
+      return {
+        descripcion: nombre, // Concepto de factura
+        productCode: claveSAT || '78181506',
+        unitCode: unidad.match(/\[(.*?)\]/)?.[1] || 'H87',
+        unit: unidad.split(']').pop()?.trim() || 'Pieza',
+        precioBase: precio
+      };
     }
   }
 
