@@ -14,14 +14,6 @@ async function generarFacturaReal(datosCliente) {
   const iva = +(precioFinal * 0.16).toFixed(2);
   const totalConIva = +(precioFinal + iva).toFixed(2);
 
-  // === Datos de producto con respaldo
-  const producto = {
-    ProductCode: datosCliente.productCode || '10111302',
-    UnitCode: datosCliente.unitCode || 'H87',
-    Unit: datosCliente.unit || 'Pieza',
-    Description: datosCliente.descripcion || 'Producto genérico'
-  };
-
   // === Mapeo de nombre de serie a código real en Facturama
   const serieMap = {
     'GLOBAL': 'A',
@@ -54,10 +46,10 @@ async function generarFacturaReal(datosCliente) {
     Items: [
       {
         Quantity: 1,
-        ProductCode: producto.ProductCode,
-        UnitCode: producto.UnitCode,
-        Unit: producto.Unit,
-        Description: producto.Description,
+        ProductCode: datosCliente.productCode || '10111302',
+        UnitCode: datosCliente.unitCode || 'H87',
+        Unit: datosCliente.unit || 'Pieza',
+        Description: datosCliente.descripcion || 'Producto genérico',
         UnitPrice: precioFinal,
         Subtotal: precioFinal,
         TaxObject: '02',
@@ -78,7 +70,9 @@ async function generarFacturaReal(datosCliente) {
   };
 
   // === Logs de depuración ===
-  console.log('🧾 Concepto que se enviará:', producto.Description);
+  console.log('🧾 Concepto que se enviará:', factura.Items[0].Description);
+  console.log('🧾 UnitCode que se enviará:', factura.Items[0].UnitCode);
+  console.log('🧾 Unit que se enviará:', factura.Items[0].Unit);
   console.log('🧾 Serie y Folio que se enviarán a Facturama:', factura.Serie, factura.Folio);
   console.log('📤 Payload completo a Facturama:\n', JSON.stringify(factura, null, 2));
 
