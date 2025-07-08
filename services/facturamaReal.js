@@ -48,29 +48,34 @@ async function generarFacturaReal(datosCliente) {
     Exportation: '01',
     Serie: serieFinal,
     Folio: datosCliente.Folio || null,
-    Items: [
+    Items: datosCliente.productos.map(prod => {
+  const precioConDescuento = +(prod.precioBase - (prod.precioBase * datosCliente.descuento / 100)).toFixed(2);
+  const iva = +(precioConDescuento * 0.16).toFixed(2);
+  const totalConIva = +(precioConDescuento + iva).toFixed(2);
+
+  return {
+    Quantity: 1,
+    ProductCode: prod.productCode,
+    UnitCode: prod.unitCode,
+    Unit: prod.unit,
+    Description: prod.descripcion,
+    UnitPrice: precioConDescuento,
+    Subtotal: precioConDescuento,
+    TaxObject: '02',
+    Taxes: [
       {
-        Quantity: 1,
-        ProductCode: productCodeFinal,
-        UnitCode: datosCliente.unitCode || 'H87',
-        Unit: datosCliente.unit || 'Pieza',
-        Description: datosCliente.descripcion || 'Producto genérico',
-        UnitPrice: precioFinal,
-        Subtotal: precioFinal,
-        TaxObject: '02',
-        Taxes: [
-          {
-            Name: 'IVA',
-            Rate: 0.16,
-            Total: iva,
-            Base: precioFinal,
-            IsRetention: false,
-            IsFederalTax: true
-          }
-        ],
-        Total: totalConIva
+        Name: 'IVA',
+        Rate: 0.16,
+        Total: iva,
+        Base: precioConDescuento,
+        IsRetention: false,
+        IsFederalTax: true
       }
     ],
+    Total: totalConIva
+  };
+}),
+
     Observations: datosCliente.comentarios || ''
   };
 

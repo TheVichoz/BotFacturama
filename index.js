@@ -7,7 +7,7 @@ const { buscarFacturasPorRFC, generarComplementoPago } = require('./facturamaCom
 const { responderChat } = require('./services/chatModel');
 const { analizarMensaje } = require('./analizarMensaje');
 const { buscarCliente } = require('./buscarCliente');
-const { buscarProducto } = require('./buscarProducto');
+const { buscarProductosMultiples } = require('./buscarProductosMultiples');
 const { probarTokenFacturama } = require('./services/probarTokenFacturama');
 const { obtenerYActualizarFolio } = require('./folioManager');
 
@@ -38,7 +38,6 @@ app.post('/webhook', async (req, res) => {
     res.set('Content-Type', 'text/xml');
     res.send(`<Response><Message>${mensaje}</Message></Response>`);
   };
-
   // === COMPLEMENTO DE PAGO ===
   if (message.toLowerCase().startsWith('complemento')) {
     const partes = message.split(' ');
@@ -80,7 +79,6 @@ app.post('/webhook', async (req, res) => {
       delete global.ESTADO_COMPLEMENTO[from];
       return responder('⚠️ No se encontró el correo del cliente en la hoja.');
     }
-
     const datosPago = {
       rfc: cliente.rfc,
       nombre: cliente.razon,
@@ -115,18 +113,16 @@ app.post('/webhook', async (req, res) => {
   }
 
   // === FACTURACIÓN ===
-const afirmacion = message
-  .trim()
-  .toLowerCase()
-  .normalize("NFD")
-  .replace(/[\u0300-\u036f]/g, ''); // elimina tildes
+  const afirmacion = message
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, '');
 
-const respuestasValidas = ['si', 'sí', 'sii', 'sip', 'claro', 'va', 'ok', 'dale'];
-const contieneAfirmacion = respuestasValidas.some(resp => afirmacion.startsWith(resp));
+  const respuestasValidas = ['si', 'sí', 'sii', 'sip', 'claro', 'va', 'ok', 'dale'];
+  const contieneAfirmacion = respuestasValidas.some(resp => afirmacion.startsWith(resp));
 
-// FACTURAR si se confirma con alguna variante de afirmación
-if (contieneAfirmacion && global.ULTIMO_INTENTO) {
-
+  if (contieneAfirmacion && global.ULTIMO_INTENTO) {
     const datos = global.ULTIMO_INTENTO;
 
     (async () => {
@@ -157,7 +153,6 @@ if (contieneAfirmacion && global.ULTIMO_INTENTO) {
 
     return;
   }
-
   if (message.toLowerCase() === 'facturar') {
     return responder(`📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\nEjemplo:\n*URVAN BLANCA\nP/GRX425F\nS/K9033313\nO/7134581\nFACTURA A NISSAN CENTRO MAX*`);
   }
@@ -165,70 +160,70 @@ if (contieneAfirmacion && global.ULTIMO_INTENTO) {
   if (message.toLowerCase().includes("factura a")) {
     const datos = analizarMensaje(message);
     const cliente = await buscarCliente(datos.cliente || '');
-    const producto = await buscarProducto(message);
+    const productos = await buscarProductosMultiples(message);
 
     if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
-    if (!producto) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
+    if (!productos?.length) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
 
-    const precioFinal = +(producto.precioBase - (producto.precioBase * cliente.descuento / 100)).toFixed(2);
-
-    // === Extraer serie desde el mensaje ===
+    const subtotal = productos.reduce((acc, p) => acc + p.precioBase, 0);
+    const descuento = cliente.descuento || 0;
+    const subtotalConDescuento = +(subtotal - (subtotal * descuento / 100)).toFixed(2);
+    const iva = +(subtotalConDescuento * 0.16).toFixed(2);
+    const totalFinal = +(subtotalConDescuento + iva).toFixed(2);
     const regexSerie = /SERIE\s+([A-Z0-9]+)/i;
     const matchSerie = message.match(regexSerie);
     const serie = matchSerie ? matchSerie[1].toUpperCase().trim() : 'GLOBAL';
 
-    // Detectar si el usuario quiere forzar método de pago
-let metodoPago = cliente.metodoPago;
-if (message.toLowerCase().includes("hoy quiero que sea pue")) {
-  metodoPago = "PUE";
-}
-if (message.toLowerCase().includes("hoy quiero que sea ppd")) {
-  metodoPago = "PPD";
-}
-console.log("🧪 Método de pago final:", metodoPago); // ← aquí
+    let metodoPago = cliente.metodoPago;
+    if (message.toLowerCase().includes("hoy quiero que sea pue")) metodoPago = "PUE";
+    if (message.toLowerCase().includes("hoy quiero que sea ppd")) metodoPago = "PPD";
+    console.log("🧪 Método de pago final:", metodoPago);
 
-global.ULTIMO_INTENTO = {
-  rfc: cliente.rfc,
-  razon: cliente.razon,
-  cp: cliente.cp,
-  cfdi: cliente.cfdi,
-  correo: cliente.correo,
-  regimen: cliente.regimen,
-  metodoPago: metodoPago,
-  formaPago: cliente.formaPago,
-  precioBase: producto.precioBase,
-  descuento: cliente.descuento,
-  precioFinal,
-  descripcion: producto.descripcion,
-  productCode: producto.productCode, // minúscula
-  unitCode: producto.unitCode,       // minúscula
-  unit: producto.unit,               // minúscula
-  comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
-  serie: serie,
-  mensajeOriginal: message
-};
+    global.ULTIMO_INTENTO = {
+      rfc: cliente.rfc,
+      razon: cliente.razon,
+      cp: cliente.cp,
+      cfdi: cliente.cfdi,
+      correo: cliente.correo,
+      regimen: cliente.regimen,
+      metodoPago: metodoPago,
+      formaPago: cliente.formaPago,
+      descuento: descuento,
+      productos: productos,
+      subtotal,
+      subtotalConDescuento,
+      iva,
+      total: totalFinal,
+      comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
+      serie: serie,
+      mensajeOriginal: message
+    };
 
-
+    const listaProductos = productos
+      .map((p, i) => `🔹 ${i + 1}. ${p.descripcion} - $${p.precioBase}`)
+      .join('\n');
 
     return responder(
       `🧾 ¿Confirmas generar la factura con los siguientes datos?\n\n` +
       `🔹 Cliente: ${cliente.razon}\n` +
       `🔹 RFC: ${cliente.rfc}\n` +
       `🔹 Régimen: ${cliente.regimen}\n` +
-     `🔹 Método de pago: ${metodoPago}\n` +
+      `🔹 Método de pago: ${metodoPago}\n` +
       `🔹 Forma de pago: ${cliente.formaPago}\n` +
       `🔹 CP: ${cliente.cp}\n` +
-      `🔹 CFDI: ${cliente.cfdi}\n` +
-      `🔹 Precio base: $${producto.precioBase}\n` +
-      `🔹 Descuento: ${cliente.descuento}%\n` +
-      `🔹 Total con descuento: $${precioFinal}\n` +
+      `🔹 CFDI: ${cliente.cfdi}\n\n` +
+      `🔹 Productos:\n${listaProductos}\n\n` +
+      `🔹 Subtotal: $${subtotal}\n` +
+      `🔹 Descuento: ${descuento}%\n` +
+      `🔹 Subtotal con descuento: $${subtotalConDescuento}\n` +
+      `🔹 IVA: $${iva}\n` +
+      `🔹 Total: $${totalFinal}\n\n` +
       `🔹 Comentarios: ${global.ULTIMO_INTENTO.comentarios}\n` +
       `🔹 Serie: ${serie}\n\n` +
       `Responde con *Sí* para emitir la factura.`
     );
   }
 
-  // === CHAT GENERAL ===
   try {
     const respuestaAI = await responderChat(message);
     const mensajeFijo = "💬 Si deseas una factura, escribe *facturar*. Para complemento, escribe *complemento {RFC}*.";
