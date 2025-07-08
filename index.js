@@ -157,72 +157,109 @@ app.post('/webhook', async (req, res) => {
     return responder(`📄 Para generar tu factura, escribe los datos que tengas disponibles.\n\nEjemplo:\n*URVAN BLANCA\nP/GRX425F\nS/K9033313\nO/7134581\nFACTURA A NISSAN CENTRO MAX*`);
   }
 
-  if (message.toLowerCase().includes("factura a")) {
-    const datos = analizarMensaje(message);
-    const cliente = await buscarCliente(datos.cliente || '');
-    const productos = await buscarProductosMultiples(message);
+if (message.toLowerCase().includes("factura a")) {
+  const lineas = message
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
 
-    if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
-    if (!productos?.length) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
+  let datos = {
+    vehiculo: '',
+    placa: null,
+    serie: null,
+    orden: null,
+    cliente: null
+  };
 
-    const subtotal = productos.reduce((acc, p) => acc + p.precioBase, 0);
-    const descuento = cliente.descuento || 0;
-    const subtotalConDescuento = +(subtotal - (subtotal * descuento / 100)).toFixed(2);
-    const iva = +(subtotalConDescuento * 0.16).toFixed(2);
-    const totalFinal = +(subtotalConDescuento + iva).toFixed(2);
-    const regexSerie = /SERIE\s+([A-Z0-9]+)/i;
-    const matchSerie = message.match(regexSerie);
-    const serie = matchSerie ? matchSerie[1].toUpperCase().trim() : 'GLOBAL';
+  const lineasProductos = [];
 
-    let metodoPago = cliente.metodoPago;
-    if (message.toLowerCase().includes("hoy quiero que sea pue")) metodoPago = "PUE";
-    if (message.toLowerCase().includes("hoy quiero que sea ppd")) metodoPago = "PPD";
-    console.log("🧪 Método de pago final:", metodoPago);
-
-    global.ULTIMO_INTENTO = {
-      rfc: cliente.rfc,
-      razon: cliente.razon,
-      cp: cliente.cp,
-      cfdi: cliente.cfdi,
-      correo: cliente.correo,
-      regimen: cliente.regimen,
-      metodoPago: metodoPago,
-      formaPago: cliente.formaPago,
-      descuento: descuento,
-      productos: productos,
-      subtotal,
-      subtotalConDescuento,
-      iva,
-      total: totalFinal,
-      comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
-      serie: serie,
-      mensajeOriginal: message
-    };
-
-    const listaProductos = productos
-      .map((p, i) => `🔹 ${i + 1}. ${p.descripcion} - $${p.precioBase}`)
-      .join('\n');
-
-    return responder(
-      `🧾 ¿Confirmas generar la factura con los siguientes datos?\n\n` +
-      `🔹 Cliente: ${cliente.razon}\n` +
-      `🔹 RFC: ${cliente.rfc}\n` +
-      `🔹 Régimen: ${cliente.regimen}\n` +
-      `🔹 Método de pago: ${metodoPago}\n` +
-      `🔹 Forma de pago: ${cliente.formaPago}\n` +
-      `🔹 CP: ${cliente.cp}\n` +
-      `🔹 CFDI: ${cliente.cfdi}\n\n` +
-      `🔹 Productos:\n${listaProductos}\n\n` +
-      `🔹 Subtotal: $${subtotal}\n` +
-      `🔹 Descuento: ${descuento}%\n` +
-      `🔹 Subtotal con descuento: $${subtotalConDescuento}\n` +
-      `🔹 IVA: $${iva}\n` +
-      `🔹 Total: $${totalFinal}\n\n` +
-      `🔹 Comentarios: ${global.ULTIMO_INTENTO.comentarios}\n` +
-      `🔹 Serie: ${serie}\n\n` +
-      `Responde con *Sí* para emitir la factura.`
-    );
+  for (const linea of lineas) {
+    if (linea.startsWith('P/')) datos.placa = linea.replace('P/', '').trim();
+    else if (linea.startsWith('S/')) datos.serie = linea.replace('S/', '').trim();
+    else if (linea.startsWith('O/')) datos.orden = linea.replace('O/', '').trim();
+    else if (linea.toUpperCase().startsWith('FACTURA A')) datos.cliente = linea.replace(/FACTURA A/i, '').trim();
+    else lineasProductos.push(linea);
   }
+
+  const cliente = await buscarCliente(datos.cliente || '');
+  if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
+
+  // Aquí buscamos qué líneas son productos válidos
+  const productosDetectados = [];
+  const productosSheet = await buscarProductosMultiples(lineasProductos.join('\n'));
+
+  // Recorremos las líneas originales sin prefijos
+  for (const linea of lineasProductos) {
+    const producto = productosSheet.find(p => p.descripcion.toLowerCase() === linea.toLowerCase());
+    if (producto) {
+      productosDetectados.push(producto);
+    } else if (!datos.vehiculo) {
+      datos.vehiculo = linea;
+    }
+  }
+
+  if (!productosDetectados.length) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
+
+  const subtotal = productosDetectados.reduce((acc, p) => acc + p.precioBase, 0);
+  const descuento = cliente.descuento || 0;
+  const subtotalConDescuento = +(subtotal - (subtotal * descuento / 100)).toFixed(2);
+  const iva = +(subtotalConDescuento * 0.16).toFixed(2);
+  const totalFinal = +(subtotalConDescuento + iva).toFixed(2);
+
+  const regexSerie = /SERIE\s+([A-Z0-9]+)/i;
+  const matchSerie = message.match(regexSerie);
+  const serie = matchSerie ? matchSerie[1].toUpperCase().trim() : 'GLOBAL';
+
+  let metodoPago = cliente.metodoPago;
+  if (message.toLowerCase().includes("hoy quiero que sea pue")) metodoPago = "PUE";
+  if (message.toLowerCase().includes("hoy quiero que sea ppd")) metodoPago = "PPD";
+
+  console.log("🧪 Método de pago final:", metodoPago);
+
+  global.ULTIMO_INTENTO = {
+    rfc: cliente.rfc,
+    razon: cliente.razon,
+    cp: cliente.cp,
+    cfdi: cliente.cfdi,
+    correo: cliente.correo,
+    regimen: cliente.regimen,
+    metodoPago: metodoPago,
+    formaPago: cliente.formaPago,
+    descuento: descuento,
+    productos: productosDetectados,
+    subtotal,
+    subtotalConDescuento,
+    iva,
+    total: totalFinal,
+    comentarios: `Vehículo: ${datos.vehiculo} / Placa: ${datos.placa} / Serie: ${datos.serie} / Orden: ${datos.orden}`,
+    serie: serie,
+    mensajeOriginal: message
+  };
+
+  const listaProductos = productosDetectados
+    .map((p, i) => `🔹 ${i + 1}. ${p.descripcion} - $${p.precioBase}`)
+    .join('\n');
+
+  return responder(
+    `🧾 ¿Confirmas generar la factura con los siguientes datos?\n\n` +
+    `🔹 Cliente: ${cliente.razon}\n` +
+    `🔹 RFC: ${cliente.rfc}\n` +
+    `🔹 Régimen: ${cliente.regimen}\n` +
+    `🔹 Método de pago: ${metodoPago}\n` +
+    `🔹 Forma de pago: ${cliente.formaPago}\n` +
+    `🔹 CP: ${cliente.cp}\n` +
+    `🔹 CFDI: ${cliente.cfdi}\n\n` +
+    `🔹 Productos:\n${listaProductos}\n\n` +
+    `🔹 Subtotal: $${subtotal}\n` +
+    `🔹 Descuento: ${descuento}%\n` +
+    `🔹 Subtotal con descuento: $${subtotalConDescuento}\n` +
+    `🔹 IVA: $${iva}\n` +
+    `🔹 Total: $${totalFinal}\n\n` +
+    `🔹 Comentarios: ${global.ULTIMO_INTENTO.comentarios}\n` +
+    `🔹 Serie: ${serie}\n\n` +
+    `Responde con *Sí* para emitir la factura.`
+  );
+}
 
   try {
     const respuestaAI = await responderChat(message);
