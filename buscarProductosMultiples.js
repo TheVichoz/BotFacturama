@@ -37,8 +37,12 @@ async function buscarProductosMultiples(mensajeUsuario = '') {
       const nombre = row[1] || '';
       const descripcion = row[2] || '';
       const unidad = row[5] || '';
-      const claveSAT = row[6] || '';
+      let claveSAT = row[6] || '';
       const precioStr = row[7] || '';
+
+      // Limpiar el ProductCode, extraer solo el número dentro de []
+      const matchSAT = claveSAT.match(/\[(.*?)\]/);
+      claveSAT = matchSAT ? matchSAT[1] : claveSAT.trim();
 
       const codigoCorto = codigo.split('-')[1]?.trim()?.toLowerCase() || '';
 
