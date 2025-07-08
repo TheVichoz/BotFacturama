@@ -184,19 +184,27 @@ if (message.toLowerCase().includes("factura a")) {
   const cliente = await buscarCliente(datos.cliente || '');
   if (!cliente) return responder('⚠️ El cliente no está registrado o no tiene un correo válido.');
 
-  // Aquí buscamos qué líneas son productos válidos
-  const productosDetectados = [];
-  const productosSheet = await buscarProductosMultiples(lineasProductos.join('\n'));
+// Aquí buscamos qué líneas son productos válidos
+const productosDetectados = [];
+const lineasSinCoincidencia = [];
 
-  // Recorremos las líneas originales sin prefijos
-  for (const linea of lineasProductos) {
-    const producto = productosSheet.find(p => p.descripcion.toLowerCase() === linea.toLowerCase());
-    if (producto) {
-      productosDetectados.push(producto);
-    } else if (!datos.vehiculo) {
-      datos.vehiculo = linea;
-    }
+const productosSheet = await buscarProductosMultiples(lineasProductos.join('\n'));
+
+// Recorremos las líneas originales sin prefijos
+for (const linea of lineasProductos) {
+  const producto = productosSheet.find(p => p.descripcion.toLowerCase() === linea.toLowerCase());
+  if (producto) {
+    productosDetectados.push(producto);
+  } else {
+    lineasSinCoincidencia.push(linea);
   }
+}
+
+// Si hay alguna línea sin coincidencia, la última es el vehículo
+if (lineasSinCoincidencia.length) {
+  datos.vehiculo = lineasSinCoincidencia.pop();
+}
+
 
   if (!productosDetectados.length) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
 
