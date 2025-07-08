@@ -190,15 +190,31 @@ const lineasSinCoincidencia = [];
 
 const productosSheet = await buscarProductosMultiples(lineasProductos.join('\n'));
 
-// Recorremos las líneas originales sin prefijos
 for (const linea of lineasProductos) {
-  const producto = productosSheet.find(p => p.descripcion.toLowerCase() === linea.toLowerCase());
+  // Verificar si la línea empieza con número (cantidad)
+  const matchCantidad = linea.match(/^(\d+)\s+(.*)/);
+  let cantidad = 1;
+  let textoProducto = linea;
+
+  if (matchCantidad) {
+    cantidad = parseInt(matchCantidad[1]);
+    textoProducto = matchCantidad[2].trim();
+  }
+
+  const producto = productosSheet.find(
+    p => p.descripcion.toLowerCase() === textoProducto.toLowerCase()
+  );
+
   if (producto) {
-    productosDetectados.push(producto);
+    productosDetectados.push({
+      ...producto,
+      cantidad
+    });
   } else {
     lineasSinCoincidencia.push(linea);
   }
 }
+
 
 // Si hay alguna línea sin coincidencia, la última es el vehículo
 if (lineasSinCoincidencia.length) {
@@ -208,7 +224,7 @@ if (lineasSinCoincidencia.length) {
 
   if (!productosDetectados.length) return responder('⚠️ No se detectó ningún producto válido en tu mensaje.');
 
-  const subtotal = productosDetectados.reduce((acc, p) => acc + p.precioBase, 0);
+const subtotal = productosDetectados.reduce((acc, p) => acc + (p.precioBase * p.cantidad), 0);
   const descuento = cliente.descuento || 0;
   const subtotalConDescuento = +(subtotal - (subtotal * descuento / 100)).toFixed(2);
   const iva = +(subtotalConDescuento * 0.16).toFixed(2);
@@ -244,9 +260,10 @@ if (lineasSinCoincidencia.length) {
     mensajeOriginal: message
   };
 
-  const listaProductos = productosDetectados
-    .map((p, i) => `🔹 ${i + 1}. ${p.descripcion} - $${p.precioBase}`)
-    .join('\n');
+const listaProductos = productosDetectados
+  .map((p, i) => `🔹 ${i + 1}. ${p.cantidad} x ${p.descripcion} - $${p.precioBase} c/u`)
+  .join('\n');
+
 
   return responder(
     `🧾 ¿Confirmas generar la factura con los siguientes datos?\n\n` +

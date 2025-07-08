@@ -50,24 +50,24 @@ async function generarFacturaReal(datosCliente) {
     Folio: datosCliente.Folio || null,
     Items: datosCliente.productos.map(prod => {
   const precioConDescuento = +(prod.precioBase - (prod.precioBase * datosCliente.descuento / 100)).toFixed(2);
-  const iva = +(precioConDescuento * 0.16).toFixed(2);
-  const totalConIva = +(precioConDescuento + iva).toFixed(2);
+  const iva = +(precioConDescuento * prod.cantidad * 0.16).toFixed(2);
+  const totalConIva = +(precioConDescuento * prod.cantidad + iva).toFixed(2);
 
   return {
-    Quantity: 1,
+    Quantity: prod.cantidad,
     ProductCode: prod.productCode,
     UnitCode: prod.unitCode,
     Unit: prod.unit,
     Description: prod.descripcion,
     UnitPrice: precioConDescuento,
-    Subtotal: precioConDescuento,
+    Subtotal: +(precioConDescuento * prod.cantidad).toFixed(2),
     TaxObject: '02',
     Taxes: [
       {
         Name: 'IVA',
         Rate: 0.16,
         Total: iva,
-        Base: precioConDescuento,
+        Base: +(precioConDescuento * prod.cantidad).toFixed(2),
         IsRetention: false,
         IsFederalTax: true
       }
